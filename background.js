@@ -4,6 +4,7 @@ fetch(chrome.runtime.getURL("config.json"))
     const CLIENT_ID = config.client_id;
 
     chrome.action.onClicked.addListener(() => {
+      console.log(`${CLIENT_ID}`)
       chrome.identity.launchWebAuthFlow(
         {
           url: `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&response_type=token&redirect_uri=https://${chrome.runtime.id}.chromiumapp.org&scope=https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/youtube.upload`,

@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Drive to YouTube Uploader",
+  "name": "Road2Nationals Uploader",
   "version": "1.0",
-  "description": "Select videos from Google Drive and upload them to YouTube",
-  "permissions": ["identity", "storage"],
+  "description": "Uploads videos for Road to Nationals to YouTube and to Road to Nationals",
+  "permissions": ["identity", "storage", "tabs"],
   "host_permissions": [
     "https://www.googleapis.com/auth/drive.readonly",
     "https://www.googleapis.com/auth/youtube.upload"

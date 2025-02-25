@@ -1,41 +1,63 @@
-document.getElementById("selectFolder").addEventListener("click", async () => {
-  chrome.storage.local.get("accessToken", async (data) => {
-    const token = data.accessToken;
+document.addEventListener("DOMContentLoaded", async () => {
+  // Get the current tab's URL
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const url = tabs[0].url;
+
+    if (url.includes("drive.google.com/drive/")) {
+      const folderId = url.split("/folders/")[1].split("?")[0]; // Extract folder ID from URL
+      console.log("Detected Google Drive Folder ID:", folderId);
+
+      // Enable upload button and pass the folder ID
+      const uploadButton = document.getElementById("uploadVideos");
+      uploadButton.style.display = "block";
+      uploadButton.onclick = () => fetchDriveVideos(folderId);
+    } else {
+      console.log("Not inside a Google Drive folder.");
+    }
+  });
+});
+
+async function fetchDriveVideos(folderId) {
+  chrome.storage.local.get("accessToken", async (result) => { // Renamed `data` to `result`
+    const token = result.accessToken;
     if (!token) {
       console.error("No access token found.");
       return;
     }
 
-    // Step 1: Let user pick a folder from Google Drive
-    const folderId = prompt("Enter Google Drive Folder ID:");
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents and mimeType contains 'video/'&fields=files(id,name)`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    // Step 2: Fetch videos from the selected folder
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents and mimeType contains 'video/'&fields=files(id,name)`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+      const responseData = await response.json(); // Renamed `data` to `responseData`
+      console.log("Videos found:", responseData.files);
 
-    const data = await response.json();
-    const videoList = document.getElementById("videoList");
-    videoList.innerHTML = "";
+      // Show videos in the popup
+      const videoList = document.getElementById("videoList");
+      videoList.innerHTML = "";
 
-    data.files.forEach((video) => {
-      let listItem = document.createElement("li");
-      listItem.textContent = video.name;
-      let uploadBtn = document.createElement("button");
-      uploadBtn.textContent = "Upload to YouTube";
-      uploadBtn.onclick = () => uploadToYouTube(video.id, video.name, token);
-      listItem.appendChild(uploadBtn);
-      videoList.appendChild(listItem);
-    });
+      responseData.files.forEach((video) => {
+        let listItem = document.createElement("li");
+        listItem.textContent = video.name;
+        let uploadBtn = document.createElement("button");
+        uploadBtn.textContent = "Upload to YouTube";
+        uploadBtn.onclick = () => uploadToYouTube(video.id, video.name, token);
+        listItem.appendChild(uploadBtn);
+        videoList.appendChild(listItem);
+      });
+    } catch (error) {
+      console.error("Error fetching videos:", error);
+    }
   });
-});
+}
 
 async function uploadToYouTube(driveFileId, fileName, accessToken) {
   try {
-    // Step 3: Get file from Google Drive
+    // Get file from Google Drive
     const driveResponse = await fetch(
       `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
       {
@@ -45,7 +67,7 @@ async function uploadToYouTube(driveFileId, fileName, accessToken) {
 
     const fileBlob = await driveResponse.blob();
 
-    // Step 4: Upload to YouTube
+    // Upload to YouTube
     const metadata = {
       snippet: {
         title: fileName,
