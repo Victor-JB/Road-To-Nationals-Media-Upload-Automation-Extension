@@ -1,3 +1,4 @@
+
 fetch(chrome.runtime.getURL("config.json"))
   .then(response => response.json())
   .then(config => {
@@ -5,9 +6,10 @@ fetch(chrome.runtime.getURL("config.json"))
 
     chrome.action.onClicked.addListener(() => {
       console.log(`${CLIENT_ID}`)
+      const REDIRECT_URI = chrome.identity.getRedirectURL();
       chrome.identity.launchWebAuthFlow(
         {
-          url: `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&response_type=token&redirect_uri=https://${chrome.runtime.id}.chromiumapp.org&scope=https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/youtube.upload`,
+          url: `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${REDIRECT_URI}&scope=https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/youtube.upload`,
           interactive: true
         },
         (redirectUrl) => {
