@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Drive to YouTube Uploader",
+  "version": "1.0",
+  "description": "Select videos from Google Drive and upload them to YouTube",
+  "permissions": ["identity", "storage"],
+  "host_permissions": [
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/youtube.upload"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  }
+}
