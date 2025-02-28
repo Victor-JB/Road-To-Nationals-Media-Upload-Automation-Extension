@@ -1,87 +1,129 @@
 // popup.js
 
 document.addEventListener("DOMContentLoaded", () => {
-  const selectButton = document.getElementById("selectFile");
+  // Button that lets user select which folder to list videos from
+  const selectFolderBtn = document.getElementById("selectFolder");
 
-  selectButton.addEventListener("click", async () => {
-    // 1) Get a valid token (or re-auth if none is stored)
-    let token = await getAccessToken();
+  // Step 1: On click, get token, list folders
+  selectFolderBtn.addEventListener("click", async () => {
+    const token = await getAccessToken();
     if (!token) {
       console.error("Failed to retrieve token!");
       return;
     }
 
-    // 2) Attempt to list Drive videos
-    let videos = await listVideosInDriveWithAutoReauth(token);
-
-    if (videos) {
-      // 3) Render them in the popup with an "Upload to YouTube" button
-      renderVideoList(videos, token);
+    try {
+      // List all folders in Drive
+      const folders = await listFoldersInDrive(token);
+      renderFolderList(folders, token);
+    } catch (err) {
+      console.error("Error listing folders:", err);
     }
   });
 });
 
 /**
- * Retrieves a stored token from chrome.storage.local. If none is found,
- * launches the OAuth flow to get a new token. Returns the token or null on failure.
+ * Checks for an existing access token. If none is found, starts an OAuth flow.
+ * Returns a Promise that resolves to the access token string or null on failure.
  */
 async function getAccessToken() {
+  // See if we have a token in chrome.storage.local
   const data = await chromeStorageGet(["accessToken"]);
   if (data.accessToken) {
     return data.accessToken;
   }
-
-  // Otherwise, do OAuth
+  // Otherwise, run OAuth
   return await launchOAuthFlow();
 }
 
 /**
- * Calls listVideosInDrive. If we get a 401 (invalid/expired token),
- * removes the token, re-auths, and tries again once.
+ * Lists all folders in the user's Drive (not trashed).
  */
-async function listVideosInDriveWithAutoReauth(token) {
-  try {
-    return await listVideosInDrive(token);
-  } catch (error) {
-    // Check if it's a 401
-    if (error.status === 401) {
-      console.warn("Token invalid or expired. Attempting re-auth...");
-      // Remove the stored token
-      await chromeStorageRemove(["accessToken"]);
-      // Re-auth
-      const newToken = await getAccessToken();
-      if (!newToken) {
-        console.error("Re-auth failed.");
-        return null;
-      }
-      // Try listing again
-      return await listVideosInDrive(newToken);
-    } else {
-      // Some other error
-      console.error("Failed to list files:", error);
-      return null;
-    }
+async function listFoldersInDrive(accessToken) {
+  const query = encodeURIComponent("mimeType='application/vnd.google-apps.folder' and trashed=false");
+  const fields = encodeURIComponent("files(id,name)");
+  const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}`;
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    const err = new Error("Failed to list folders");
+    err.status = response.status;
+    throw err;
   }
+
+  const data = await response.json();
+  // data.files => an array of objects { id, name }
+  return data.files || [];
 }
 
 /**
- * Makes an authenticated request to Drive API to list video files.
- * Throws an error with .status = 401 if the token is invalid.
+ * Renders the Drive folders so the user can pick one. Clicking a folder's "Show Videos"
+ * button calls listVideosInFolder and shows them in the popup.
  */
-async function listVideosInDrive(accessToken) {
-  const query = encodeURIComponent("mimeType contains 'video/' and trashed = false");
-  const fields = encodeURIComponent("files(id,name,mimeType)");
+function renderFolderList(folders, token) {
+  const folderList = document.getElementById("folderList");
+  folderList.innerHTML = "";
 
-  const response = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    }
+  if (!folders.length) {
+    folderList.textContent = "No folders found in Drive.";
+    return;
+  }
+
+  folders.forEach((folder) => {
+  
+    const li = document.createElement("li");
+    li.className = "folderItem";
+
+    // Folder icon
+    const icon = document.createElement("img");
+    icon.src = "icons/folder.png"; // Replace with your folder icon path
+    li.appendChild(icon);
+
+    // Folder name
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = folder.name;
+    li.appendChild(nameSpan);
+
+
+    // "Show Videos" button to list the videos in this folder
+    const selectBtn = document.createElement("button");
+    selectBtn.textContent = "Show Videos";
+    selectBtn.addEventListener("click", async () => {
+      try {
+        const videos = await listVideosInFolder(token, folder.id);
+        renderVideoList(videos, token);
+      } catch (error) {
+        console.error("Error listing videos:", error);
+      }
+    });
+
+    li.appendChild(selectBtn);
+    folderList.appendChild(li);
+  });
+}
+
+/**
+ * Lists only video files in a given folder.
+ */
+async function listVideosInFolder(accessToken, folderId) {
+  // 'folderId' in parents => only files in that folder
+  // mimeType contains 'video/' => only video files
+  const query = encodeURIComponent(
+    `'${folderId}' in parents and mimeType contains 'video/' and trashed=false`
   );
+  const fields = encodeURIComponent("files(id,name,mimeType)");
+  const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}`;
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 
   if (!response.ok) {
-    const err = new Error("Failed to list Drive files");
-    err.status = response.status; // so we can detect 401
+    const err = new Error("Failed to list videos in folder");
+    err.status = response.status;
     throw err;
   }
 
@@ -93,11 +135,11 @@ async function listVideosInDrive(accessToken) {
  * Renders a list of video files into the popup UI with an "Upload" button for each.
  */
 function renderVideoList(videos, accessToken) {
-  const ul = document.getElementById("videoList");
-  ul.innerHTML = ""; // Clear any old entries
+  const videoList = document.getElementById("videoList");
+  videoList.innerHTML = ""; // Clear any old entries
 
   if (!videos.length) {
-    ul.textContent = "No video files found in Drive.";
+    videoList.textContent = "No video files found in this folder.";
     return;
   }
 
@@ -108,22 +150,26 @@ function renderVideoList(videos, accessToken) {
     const uploadBtn = document.createElement("button");
     uploadBtn.textContent = "Upload to YouTube";
     uploadBtn.addEventListener("click", async () => {
-      // Attempt upload
+      // We use the existing YouTube upload code, with auto-reauth if you like
       try {
         await uploadToYouTubeWithAutoReauth(file.id, file.name, accessToken);
       } catch (err) {
-        alert("Upload failed. Check console for details.");
-        console.error(err);
+        console.error("Upload failed:", err);
+        alert("Error uploading to YouTube. Check console for details.");
       }
     });
 
     li.appendChild(uploadBtn);
-    ul.appendChild(li);
+    videoList.appendChild(li);
   });
 }
 
+/* ------------------------------------------------------------------
+   --------------- YouTube Upload Logic & Auto-Reauth ---------------
+   ----------------------------------------------------------------- */
+
 /**
- * Upload to YouTube. If we see a 401, auto-re-auth once.
+ * Upload to YouTube, but if we see a 401, remove the token & reauth once.
  */
 async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, token) {
   try {
@@ -134,19 +180,19 @@ async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, token) {
       await chromeStorageRemove(["accessToken"]);
       const newToken = await getAccessToken();
       if (!newToken) {
-        console.error("Re-auth failed.");
-        throw error;
+        throw new Error("Re-auth failed.");
       }
+      // Try again with a fresh token
       await uploadToYouTube(driveFileId, fileName, newToken);
     } else {
-      throw error; // some other error
+      throw error;
     }
   }
 }
 
 /**
  * Resumable upload: fetch the video bytes from Drive, then upload them to YouTube.
- * Throws an error with .status=401 if the token is invalid.
+ * If token is invalid, we throw an Error with .status = 401.
  */
 async function uploadToYouTube(driveFileId, fileName, accessToken) {
   // Step 1: Initiate the upload session
@@ -166,7 +212,7 @@ async function uploadToYouTube(driveFileId, fileName, accessToken) {
           categoryId: "22", // People & Blogs
         },
         status: {
-          privacyStatus: "public",
+          privacyStatus: "public", // or "unlisted"/"private"
         },
       }),
     }
@@ -209,24 +255,22 @@ async function uploadToYouTube(driveFileId, fileName, accessToken) {
 
   const youtubeData = await response.json();
   console.log("Uploaded to YouTube:", youtubeData);
-
-  // Optionally show a success message
   alert(`Successfully uploaded "${fileName}" to YouTube!`);
 }
 
-/* ---------- Helpers for Chrome Storage / OAuth flow ---------- */
+/* ---------- OAuth + Chrome Storage Helper Functions ---------- */
 
 /**
- * A small wrapper that returns a Promise for chrome.storage.local.get.
+ * Minimal wrapper that returns a Promise for chrome.storage.local.get.
  */
 function chromeStorageGet(keys) {
   return new Promise((resolve) => {
-    chrome.storage.local.get(keys, (result) => resolve(result));
+    chrome.storage.local.get(keys, (data) => resolve(data));
   });
 }
 
 /**
- * A small wrapper that returns a Promise for chrome.storage.local.remove.
+ * Minimal wrapper that returns a Promise for chrome.storage.local.remove.
  */
 function chromeStorageRemove(keys) {
   return new Promise((resolve) => {
@@ -235,12 +279,12 @@ function chromeStorageRemove(keys) {
 }
 
 /**
- * Actually performs the OAuth flow and returns the new token, or null on error.
+ * Launches the OAuth flow using chrome.identity.launchWebAuthFlow, returns token or null on error.
  */
 function launchOAuthFlow() {
   return new Promise((resolve) => {
     const REDIRECT_URI = chrome.identity.getRedirectURL();
-    const CLIENT_ID = "";
+    const CLIENT_ID = "1074281984090-n75o8b77ldedh7cmgstd3s7m7envvhg1.apps.googleusercontent.com";
     const SCOPES = [
       "https://www.googleapis.com/auth/drive.readonly",
       "https://www.googleapis.com/auth/youtube.upload",
@@ -260,7 +304,6 @@ function launchOAuthFlow() {
         return;
       }
       if (redirectUrl) {
-        // Extract the token from URL fragment (#access_token=...)
         const token = new URL(redirectUrl).hash.split("&")[0].split("=")[1];
         chrome.storage.local.set({ accessToken: token }, () => {
           resolve(token);

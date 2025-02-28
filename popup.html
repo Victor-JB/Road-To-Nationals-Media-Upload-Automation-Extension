@@ -2,14 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Drive to YouTube Uploader</title>
+  <title>Road to Nationals Uploader</title>
 
-  <!-- Then load popup.js -->
+  <!-- Link to your custom CSS file -->
+  <link rel="stylesheet" href="popup.css" />
+
+  <!-- Your extension’s popup.js file -->
   <script defer src="popup.js"></script>
 </head>
 <body>
-  <h1>Upload Drive Videos to YouTube</h1>
-  <button id="selectFile">Select Video from Google Drive</button>
-  <ul id="videoList"></ul>
+  <!-- Container enforces a fixed size so the popup doesn't auto-resize. -->
+  <div id="popupContainer">
+
+    <!-- A top header section with your extension name and logo -->
+    <header>
+      <img src="icons/logo.png" alt="Extension Logo" class="headerLogo" />
+      <h1 class="extensionTitle">Road to Nationals Uploader</h1>
+    </header>
+
+    <!-- Instructions + buttons go here -->
+    <div class="instructions">
+      <p>Select a folder below to show the videos, then click "Upload to YouTube".</p>
+      <button id="selectFolder">Select Folder &amp; List Videos</button>
+    </div>
+
+    <!-- Scrollable area for folders (3 icons per row) -->
+    <div class="foldersContainer">
+      <ul id="folderList" class="folderGrid">
+        <!--
+          JavaScript will dynamically create <li> elements
+          each containing a folder icon and name, e.g.:
+          <li class="folderItem">
+            <img src="icons/folder.png" />
+            <span>Folder Name</span>
+            <button>Show Videos</button>
+          </li>
+        -->
+      </ul>
+    </div>
+
+    <!-- Scrollable area for videos in the selected folder -->
+    <div class="videosContainer">
+      <ul id="videoList" class="videoList">
+        <!-- Similarly, JS will create a list of videos, each with an Upload button -->
+      </ul>
+    </div>
+
+  </div>
 </body>
 </html>

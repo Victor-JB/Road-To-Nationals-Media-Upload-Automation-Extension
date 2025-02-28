@@ -1,3 +1,7 @@
 SUPABASE FOR API KEYS BEFORE PUSHING GITHUB
 verification for google
 use jquery to populate fields in road2nat
+
+have extension publish videos publicly; also make sure name of video is correct
+also make sure description / score can be inputted per video
+autoupload all of the videos to a playlist
