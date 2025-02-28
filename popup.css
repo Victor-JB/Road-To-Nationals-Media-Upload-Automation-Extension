@@ -1,23 +1,19 @@
-/* Fix the body margin, background, etc. */
 html, body {
   margin: 0;
   padding: 0;
   font-family: sans-serif;
-  /* If you prefer no text selection highlight: user-select: none; */
 }
 
-/* Set a fixed size so the Chrome extension popup won't auto-resize. */
 #popupContainer {
-  width: 600px;  /* You can adjust these as desired */
+  width: 600px;
   height: 400px;
-  padding: 8px;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  padding: 8px;
+  box-sizing: border-box;
   background-color: #fdfdfd;
 }
 
-/* Header styling: logo on the left, title on the right, horizontally aligned */
 header {
   display: flex;
   align-items: center;
@@ -27,8 +23,8 @@ header {
 .headerLogo {
   width: 40px;
   height: 40px;
-  object-fit: contain;
   margin-right: 10px;
+  object-fit: contain;
 }
 
 .extensionTitle {
@@ -36,39 +32,48 @@ header {
   margin: 0;
 }
 
-/* Instructions and main button(s) */
 .instructions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
   font-size: 0.9rem;
 }
+.instructions p {
+  margin: 0;
+  flex: 1; /* let the paragraph expand, pushing the button & search to the right if needed */
+}
 .instructions button {
-  margin-top: 4px;
   padding: 6px 12px;
   font-size: 0.9rem;
   cursor: pointer;
 }
 
-/* Folders container (scrollable region) */
+.folderSearchInput {
+  padding: 6px;
+  font-size: 0.9rem;
+  width: 140px;
+  flex-shrink: 0;
+}
+
 .foldersContainer {
-  flex: 1 1 auto; /* let it grow/shrink in layout */
-  overflow-y: auto; /* scroll vertically if needed */
+  flex: 1 1 auto;
+  overflow-y: auto;
   margin-bottom: 8px;
   border: 1px solid #ddd;
   padding: 8px;
   background-color: #fff;
 }
 
-/* Our grid of folders: 3 columns, spaced out */
 .folderGrid {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);  /* 3 across */
-  grid-gap: 16px;                        /* spacing between items */
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 16px;
 }
 
-/* Each folder item: icon + label + button */
 .folderItem {
   display: flex;
   flex-direction: column;
@@ -79,7 +84,7 @@ header {
 .folderItem img {
   width: 48px;
   height: 48px;
-  object-fit: cover; /* or contain, as you prefer */
+  object-fit: cover;
   margin-bottom: 4px;
 }
 
@@ -96,7 +101,6 @@ header {
   cursor: pointer;
 }
 
-/* Videos container, also scrollable if needed */
 .videosContainer {
   flex: 1 1 auto;
   overflow-y: auto;
@@ -105,7 +109,6 @@ header {
   background-color: #fff;
 }
 
-/* Simple styling for the video list */
 .videoList {
   list-style: none;
   padding: 0;

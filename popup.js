@@ -1,11 +1,12 @@
 // popup.js
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Button that lets user select which folder to list videos from
-  const selectFolderBtn = document.getElementById("selectFolder");
+let allFolders = []; // We'll store the fetched folders in this array
 
-  // Step 1: On click, get token, list folders
-  selectFolderBtn.addEventListener("click", async () => {
+document.addEventListener("DOMContentLoaded", () => {
+  const refreshFoldersBtn = document.getElementById("refreshFolders");
+  const folderSearchInput = document.getElementById("folderSearch");
+
+  refreshFoldersBtn.addEventListener("click", async () => {
     const token = await getAccessToken();
     if (!token) {
       console.error("Failed to retrieve token!");
@@ -13,32 +14,93 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // List all folders in Drive
-      const folders = await listFoldersInDrive(token);
-      renderFolderList(folders, token);
+      // Fetch and store all folders in memory
+      allFolders = await listFoldersInDrive(token);
+      // Render them unfiltered
+      renderFolderList(allFolders, token);
     } catch (err) {
       console.error("Error listing folders:", err);
     }
   });
+
+  // As the user types, filter the full folder list
+  folderSearchInput.addEventListener("input", () => {
+    // Simple case-insensitive filter
+    const searchValue = folderSearchInput.value.toLowerCase();
+    // Filter the global allFolders array
+    const filtered = allFolders.filter((folder) =>
+      folder.name.toLowerCase().includes(searchValue)
+    );
+
+    // Re-render with just the filtered array
+    // We don't need another token fetch here because
+    // we're simply re-displaying the same items.
+    renderFolderList(filtered, null);
+  });
 });
 
-/**
- * Checks for an existing access token. If none is found, starts an OAuth flow.
- * Returns a Promise that resolves to the access token string or null on failure.
- */
+/*
+  -------------
+   OAUTH LOGIC
+  -------------
+   (Your existing code to fetch or refresh the token, etc.)
+*/
+
 async function getAccessToken() {
-  // See if we have a token in chrome.storage.local
+  // Pseudocode from your existing approach
   const data = await chromeStorageGet(["accessToken"]);
   if (data.accessToken) {
     return data.accessToken;
   }
-  // Otherwise, run OAuth
   return await launchOAuthFlow();
 }
 
-/**
- * Lists all folders in the user's Drive (not trashed).
- */
+function launchOAuthFlow() {
+  return new Promise((resolve) => {
+    const REDIRECT_URI = chrome.identity.getRedirectURL();
+    const CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com";
+    const SCOPES = [
+      "https://www.googleapis.com/auth/drive.readonly",
+      "https://www.googleapis.com/auth/youtube.upload",
+    ].join(" ");
+
+    const authUrl =
+      "https://accounts.google.com/o/oauth2/auth" +
+      "?client_id=" + encodeURIComponent(CLIENT_ID) +
+      "&response_type=token" +
+      "&redirect_uri=" + encodeURIComponent(REDIRECT_URI) +
+      "&scope=" + encodeURIComponent(SCOPES);
+
+    chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, (redirectUrl) => {
+      if (chrome.runtime.lastError) {
+        console.error("OAuth failed:", chrome.runtime.lastError);
+        resolve(null);
+        return;
+      }
+      if (redirectUrl) {
+        const token = new URL(redirectUrl).hash.split("&")[0].split("=")[1];
+        chrome.storage.local.set({ accessToken: token }, () => {
+          resolve(token);
+        });
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
+function chromeStorageGet(keys) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(keys, (data) => resolve(data));
+  });
+}
+
+/*
+  -------------
+   DRIVE API: LIST FOLDERS
+  -------------
+*/
+
 async function listFoldersInDrive(accessToken) {
   const query = encodeURIComponent("mimeType='application/vnd.google-apps.folder' and trashed=false");
   const fields = encodeURIComponent("files(id,name)");
@@ -49,37 +111,34 @@ async function listFoldersInDrive(accessToken) {
   });
 
   if (!response.ok) {
-    const err = new Error("Failed to list folders");
-    err.status = response.status;
-    throw err;
+    throw new Error(`Failed to list folders: ${response.status}`);
   }
 
   const data = await response.json();
-  // data.files => an array of objects { id, name }
   return data.files || [];
 }
 
-/**
- * Renders the Drive folders so the user can pick one. Clicking a folder's "Show Videos"
- * button calls listVideosInFolder and shows them in the popup.
- */
+/*
+  -------------
+   RENDER FOLDERS
+  -------------
+*/
 function renderFolderList(folders, token) {
-  const folderList = document.getElementById("folderList");
-  folderList.innerHTML = "";
+  const folderListElem = document.getElementById("folderList");
+  folderListElem.innerHTML = "";
 
   if (!folders.length) {
-    folderList.textContent = "No folders found in Drive.";
+    folderListElem.textContent = "No folders found.";
     return;
   }
 
   folders.forEach((folder) => {
-  
     const li = document.createElement("li");
     li.className = "folderItem";
 
     // Folder icon
     const icon = document.createElement("img");
-    icon.src = "icons/folder.png"; // Replace with your folder icon path
+    icon.src = "icons/folder.png"; // your folder icon path
     li.appendChild(icon);
 
     // Folder name
@@ -87,30 +146,30 @@ function renderFolderList(folders, token) {
     nameSpan.textContent = folder.name;
     li.appendChild(nameSpan);
 
-
-    // "Show Videos" button to list the videos in this folder
-    const selectBtn = document.createElement("button");
-    selectBtn.textContent = "Show Videos";
-    selectBtn.addEventListener("click", async () => {
-      try {
-        const videos = await listVideosInFolder(token, folder.id);
-        renderVideoList(videos, token);
-      } catch (error) {
-        console.error("Error listing videos:", error);
-      }
+    // "Show Videos" button
+    const showBtn = document.createElement("button");
+    showBtn.textContent = "Show Videos";
+    // If we do need a token for the next step, use the one we fetched.
+    // If token is null, we can re-fetch inside the click if needed.
+    showBtn.addEventListener("click", async () => {
+      const accessToken = token || (await getAccessToken());
+      if (!accessToken) return;
+      const videos = await listVideosInFolder(accessToken, folder.id);
+      renderVideoList(videos, accessToken);
     });
+    li.appendChild(showBtn);
 
-    li.appendChild(selectBtn);
-    folderList.appendChild(li);
+    folderListElem.appendChild(li);
   });
 }
 
-/**
- * Lists only video files in a given folder.
- */
+/*
+  -------------
+   LIST & RENDER VIDEOS
+  -------------
+   (Your code to fetch videos from folder and display them)
+*/
 async function listVideosInFolder(accessToken, folderId) {
-  // 'folderId' in parents => only files in that folder
-  // mimeType contains 'video/' => only video files
   const query = encodeURIComponent(
     `'${folderId}' in parents and mimeType contains 'video/' and trashed=false`
   );
@@ -120,26 +179,19 @@ async function listVideosInFolder(accessToken, folderId) {
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-
   if (!response.ok) {
-    const err = new Error("Failed to list videos in folder");
-    err.status = response.status;
-    throw err;
+    throw new Error(`Failed to list videos in folder: ${response.status}`);
   }
-
   const data = await response.json();
   return data.files || [];
 }
 
-/**
- * Renders a list of video files into the popup UI with an "Upload" button for each.
- */
 function renderVideoList(videos, accessToken) {
-  const videoList = document.getElementById("videoList");
-  videoList.innerHTML = ""; // Clear any old entries
+  const videoListElem = document.getElementById("videoList");
+  videoListElem.innerHTML = "";
 
   if (!videos.length) {
-    videoList.textContent = "No video files found in this folder.";
+    videoListElem.textContent = "No video files found in this folder.";
     return;
   }
 
@@ -147,6 +199,7 @@ function renderVideoList(videos, accessToken) {
     const li = document.createElement("li");
     li.textContent = `${file.name} (${file.mimeType}) `;
 
+    // "Upload" button
     const uploadBtn = document.createElement("button");
     uploadBtn.textContent = "Upload to YouTube";
     uploadBtn.addEventListener("click", async () => {
