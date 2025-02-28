@@ -14,8 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Fetch and store all folders in memory
-      allFolders = await listFoldersInDrive(token);
+      // (1) Use the auto-reauth wrapper to list folders
+      allFolders = await listFoldersInDriveWithAutoReauth(token);
       // Render them unfiltered
       renderFolderList(allFolders, token);
     } catch (err) {
@@ -111,7 +111,10 @@ async function listFoldersInDrive(accessToken) {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to list folders: ${response.status}`);
+    const err = new Error(`Failed to list folders: ${response.status}`);
+    // Store the numeric status code so we can check it
+    err.status = response.status;
+    throw err;
   }
 
   const data = await response.json();
@@ -154,8 +157,13 @@ function renderFolderList(folders, token) {
     showBtn.addEventListener("click", async () => {
       const accessToken = token || (await getAccessToken());
       if (!accessToken) return;
-      const videos = await listVideosInFolder(accessToken, folder.id);
-      renderVideoList(videos, accessToken);
+      try {
+        // (2) Use the auto-reauth wrapper for listing videos
+        const videos = await listVideosInFolderWithAutoReauth(accessToken, folder.id);
+        renderVideoList(videos, accessToken);
+      } catch (error) {
+        console.error("Error listing videos:", error);
+      }
     });
     li.appendChild(showBtn);
 
@@ -180,7 +188,9 @@ async function listVideosInFolder(accessToken, folderId) {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) {
-    throw new Error(`Failed to list videos in folder: ${response.status}`);
+    const err = new Error(`Failed to list videos in folder: ${response.status}`);
+    err.status = response.status;
+    throw err;
   }
   const data = await response.json();
   return data.files || [];
@@ -213,7 +223,7 @@ function renderVideoList(videos, accessToken) {
     });
 
     li.appendChild(uploadBtn);
-    videoList.appendChild(li);
+    videoListElem.appendChild(li);
   });
 }
 
@@ -366,4 +376,48 @@ function launchOAuthFlow() {
       }
     });
   });
+}
+
+/* ------------------------------------------------------------------
+   --------------- ADDED AUTO-REAUTH FUNCTIONS ---------------
+   ----------------------------------------------------------------- */
+
+/**
+ * Wraps listFoldersInDrive to automatically re-auth if we get a 401.
+ */
+async function listFoldersInDriveWithAutoReauth(token) {
+  try {
+    return await listFoldersInDrive(token);
+  } catch (error) {
+    if (error.status === 401) {
+      console.warn("Token invalid while listing folders. Re-authing...");
+      await chromeStorageRemove(["accessToken"]);
+      const newToken = await getAccessToken();
+      if (!newToken) {
+        throw new Error("Re-auth failed for listing folders.");
+      }
+      return await listFoldersInDrive(newToken);
+    }
+    throw error; // some other error
+  }
+}
+
+/**
+ * Wraps listVideosInFolder to automatically re-auth if we get a 401.
+ */
+async function listVideosInFolderWithAutoReauth(token, folderId) {
+  try {
+    return await listVideosInFolder(token, folderId);
+  } catch (error) {
+    if (error.status === 401) {
+      console.warn("Token invalid while listing videos. Re-authing...");
+      await chromeStorageRemove(["accessToken"]);
+      const newToken = await getAccessToken();
+      if (!newToken) {
+        throw new Error("Re-auth failed for listing videos.");
+      }
+      return await listVideosInFolder(newToken, folderId);
+    }
+    throw error;
+  }
 }
