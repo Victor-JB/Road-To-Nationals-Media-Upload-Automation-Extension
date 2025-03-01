@@ -1,33 +1,33 @@
 // popup.js
-import {
-  getAccessToken
-} from "./oauth.js";
-
+import { getAccessToken } from "./oauth.js";
 import {
   listFoldersInDriveWithAutoReauth,
-  listVideosInFolderWithAutoReauth
+  listVideosInFolderWithAutoReauth,
 } from "./driveApi.js";
 
+// NEW: import the mass upload function we'll add in youtubeApi.js
 import {
-  uploadToYouTubeWithAutoReauth
+  uploadToYouTubeWithAutoReauth,
+  massUploadAllVideosToPlaylist,
 } from "./youtubeApi.js";
 
 // We'll store the fetched folders in this array for searching
 let allFolders = [];
+
+// We'll store the currently displayed videos, so we can mass-upload them
+let currentVideos = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   const refreshFoldersBtn = document.getElementById("refreshFolders");
   const folderSearchInput = document.getElementById("folderSearch");
 
   refreshFoldersBtn.addEventListener("click", async () => {
-    // 1) Get a token
     const token = await getAccessToken();
     if (!token) {
       console.error("Failed to retrieve token!");
       return;
     }
 
-    // 2) Auto-reauth if 401
     try {
       allFolders = await listFoldersInDriveWithAutoReauth(token);
       renderFolderList(allFolders, token);
@@ -42,8 +42,41 @@ document.addEventListener("DOMContentLoaded", () => {
     const filtered = allFolders.filter((folder) =>
       folder.name.toLowerCase().includes(searchValue)
     );
-    // Re-render with just the filtered array
     renderFolderList(filtered, null);
+  });
+
+  // === NEW: "Mass Upload" button event ===
+  const uploadAllBtn = document.getElementById("uploadAllButton");
+  uploadAllBtn.addEventListener("click", async () => {
+    try {
+      // Grab the user-entered playlist name
+      const playlistName = document
+        .getElementById("playlistNameInput")
+        .value.trim();
+
+      if (!playlistName) {
+        alert("Please enter a playlist name first.");
+        return;
+      }
+      if (!currentVideos.length) {
+        alert("No videos to upload in this folder!");
+        return;
+      }
+
+      // Get or refresh token
+      const token = await getAccessToken();
+      if (!token) {
+        alert("Failed to retrieve token for mass upload.");
+        return;
+      }
+
+      // Call our new mass-upload function
+      await massUploadAllVideosToPlaylist(currentVideos, playlistName, token);
+      alert("All videos uploaded and added to the playlist!");
+    } catch (err) {
+      console.error("Error in mass upload:", err);
+      alert("Mass upload failed. Check console for details.");
+    }
   });
 });
 
@@ -65,7 +98,7 @@ function renderFolderList(folders, token) {
 
     // Folder icon
     const icon = document.createElement("img");
-    icon.src = "icons/folder.png"; // your folder icon path
+    icon.src = "icons/folder.png";
     li.appendChild(icon);
 
     // Folder name
@@ -77,13 +110,11 @@ function renderFolderList(folders, token) {
     const showBtn = document.createElement("button");
     showBtn.textContent = "Show Videos";
     showBtn.addEventListener("click", async () => {
-      // If token is null, re-fetch
       let finalToken = token;
       if (!finalToken) {
         finalToken = await getAccessToken();
         if (!finalToken) return;
       }
-
       try {
         const videos = await listVideosInFolderWithAutoReauth(finalToken, folder.id);
         renderVideoList(videos, finalToken);
@@ -98,11 +129,15 @@ function renderFolderList(folders, token) {
 }
 
 /**
- * Renders a list of videos with "Upload to YouTube" buttons.
+ * Renders a list of videos with "Upload to YouTube" buttons
+ * and also updates currentVideos so we can mass-upload them.
  */
 function renderVideoList(videos, accessToken) {
   const videoListElem = document.getElementById("videoList");
   videoListElem.innerHTML = "";
+
+  // NEW: store globally so "mass upload" can see them
+  currentVideos = videos;
 
   if (!videos.length) {
     videoListElem.textContent = "No video files found in this folder.";
@@ -113,7 +148,7 @@ function renderVideoList(videos, accessToken) {
     const li = document.createElement("li");
     li.textContent = `${file.name} (${file.mimeType}) `;
 
-    // "Upload" button
+    // Existing single upload
     const uploadBtn = document.createElement("button");
     uploadBtn.textContent = "Upload to YouTube";
     uploadBtn.addEventListener("click", async () => {

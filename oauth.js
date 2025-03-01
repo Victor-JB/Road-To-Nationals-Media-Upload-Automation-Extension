@@ -34,7 +34,7 @@ export function launchOAuthFlow() {
     const CLIENT_ID = "1074281984090-n75o8b77ldedh7cmgstd3s7m7envvhg1.apps.googleusercontent.com";
     const SCOPES = [
       "https://www.googleapis.com/auth/drive.readonly",
-      "https://www.googleapis.com/auth/youtube.upload",
+      "https://www.googleapis.com/auth/youtube",
     ].join(" ");
 
     const authUrl =
