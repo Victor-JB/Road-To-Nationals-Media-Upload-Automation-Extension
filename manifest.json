@@ -3,7 +3,7 @@
   "name": "GymACT Road2Nationals Uploader",
   "version": "1.0",
   "description": "Automatically uploads competition videos to YouTube and Road2Nationals [not affiliated].",
-  "permissions": ["identity", "storage", "tabs"],
+  "permissions": ["identity", "storage"],
   "host_permissions": [
     "https://www.googleapis.com/auth/drive.readonly",
     "https://www.googleapis.com/auth/youtube.upload"
