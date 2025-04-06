@@ -17,7 +17,15 @@ let allFolders = [];
 // We'll store the currently displayed videos, so we can mass-upload them
 let currentVideos = [];
 
+// This is used for the drag-to-resize logic at bottom of file
+let isDragging = false;
+
+const divider = document.getElementById("divider");
+const foldersSection = document.getElementById("foldersSection");
+const videosSection = document.getElementById("videosSection");
+
 document.addEventListener("DOMContentLoaded", () => {
+  
   const refreshFoldersBtn = document.getElementById("refreshFolders");
   const folderSearchInput = document.getElementById("folderSearch");
 
@@ -78,6 +86,16 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Mass upload failed. Check console for details.");
     }
   });
+
+  // Set initial heights for resizing logic
+  const resizablePanel = document.getElementById("resizablePanel");
+
+  const totalHeight = resizablePanel.clientHeight;
+  const defaultRatio = 0.5; // 50/50 split to start
+
+  foldersSection.style.flexBasis = `${totalHeight * defaultRatio}px`;
+  videosSection.style.flexBasis = `${totalHeight * (1 - defaultRatio) - 6}px`; // minus divider height
+
 });
 
 /**
@@ -169,12 +187,6 @@ function renderVideoList(videos, accessToken, folderName) {
 Logic for resizing the folder and video sections
 This is a simple drag-to-resize implementation.
 */
-
-let isDragging = false;
-
-const divider = document.getElementById("divider");
-const foldersSection = document.getElementById("foldersSection");
-const videosSection = document.getElementById("videosSection");
 
 divider.addEventListener("mousedown", (e) => {
   e.preventDefault();
