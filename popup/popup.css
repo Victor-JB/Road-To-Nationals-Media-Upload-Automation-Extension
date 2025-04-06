@@ -111,7 +111,8 @@ header {
   min-height: 60px; /* or whatever feels right */
   resize: vertical;
   position: relative;
-  box-shadow: inset 0 -1px 0 0 #ccc;
+  box-shadow: none;
+  border-top: 1px solid #ccc;
 }
 
 .videoList {
@@ -138,7 +139,7 @@ header {
   flex-direction: column;
   height: 400px; /* total container height */
   min-height: 300px;
-  border: 1px solid #ccc;
+  border: none;
 }
 
 #divider {
@@ -146,10 +147,8 @@ header {
   background-color: #e0e0e0;
   cursor: row-resize;
   position: relative;
-}
-
-#divider:hover .divider-grip span {
-  background-color: #555;
+  border: none;
+  box-shadow: none;
 }
 
 .divider-grip {
@@ -164,10 +163,14 @@ header {
 .divider-grip span {
   width: 6px;
   height: 6px;
-  background-color: #888;
+  background-color: #777;
   border-radius: 50%;
-  display: inline-block;
 }
+
+#divider:hover .divider-grip span {
+  background-color: #555;
+}
+
 .massUploadContainer {
   margin-bottom: 12px; /* or whatever spacing looks clean */
 }
