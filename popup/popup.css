@@ -61,9 +61,9 @@ header {
   flex: 1 1 auto;
   overflow-y: auto;
   margin-bottom: 8px;
-  border: 1px solid #ddd;
   padding: 8px;
-  background-color: #fff;
+  border: none; /* just in case */
+  background-color: #fdfdfd;
 }
 
 .folderGrid {
@@ -105,14 +105,13 @@ header {
 .videosContainer {
   flex: 1 1 auto;
   overflow-y: auto;
-  border: 1px solid #ddd;
+  border: none; /* remove double border conflict */
   padding: 8px;
-  background-color: #fff;
-  min-height: 60px; /* or whatever feels right */
-  resize: vertical;
+  background-color: #fdfdfd; /* match popupContainer */
+  min-height: 60px;
+  resize: none;
   position: relative;
   box-shadow: none;
-  border-top: 1px solid #ccc;
 }
 
 .videoList {
@@ -143,12 +142,21 @@ header {
 }
 
 #divider {
-  height: 8px;
-  background-color: #e0e0e0;
+  height: 6px; /* make it sleeker */
+  background-color: #ccc; /* solid, no gradient */
   cursor: row-resize;
   position: relative;
   border: none;
   box-shadow: none;
+  z-index: 2; /* ensure it's above any panel edge */
+}
+
+#divider::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc; /* match divider */
+  z-index: -1;
 }
 
 .divider-grip {
