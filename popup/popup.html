@@ -27,26 +27,29 @@
       />
     </div>
 
-    <div class="foldersContainer">
-      <ul id="folderList" class="folderGrid"></ul>
-    </div>
-
-    <div class="videosContainer">
-      <ul id="videoList" class="videoList"></ul>
-      <!-- NEW: mass-upload controls -->
-      <div class="massUploadContainer">
-        <input
-          id="playlistNameInput"
-          type="text"
-          placeholder="Playlist name..."
-          style="margin-top: 8px;"
-        />
-        <button
-          id="uploadAllButton"
-          style="margin-left: 8px;"
-        >
-          Mass Upload to Playlist
-        </button>
+    <div id="resizablePanel">
+      <div class="foldersContainer" id="foldersSection">
+        <ul id="folderList" class="folderGrid"></ul>
+      </div>
+    
+      <div id="divider"></div>
+    
+      <div class="videosContainer" id="videosSection">
+        <ul id="videoList" class="videoList"></ul>
+        <div class="massUploadContainer">
+          <input
+            id="playlistNameInput"
+            type="text"
+            placeholder="Playlist name..."
+            style="margin-top: 8px;"
+          />
+          <button
+            id="uploadAllButton"
+            style="margin-left: 8px;"
+          >
+            Mass Upload to Playlist
+          </button>
+        </div>
       </div>
     </div>
   </div>

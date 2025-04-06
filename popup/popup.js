@@ -98,7 +98,7 @@ function renderFolderList(folders, token) {
 
     // Folder icon
     const icon = document.createElement("img");
-    icon.src = "icons/folder.png";
+    icon.src = "../icons/folder.png";
     li.appendChild(icon);
 
     // Folder name
@@ -117,7 +117,7 @@ function renderFolderList(folders, token) {
       }
       try {
         const videos = await listVideosInFolderWithAutoReauth(finalToken, folder.id);
-        renderVideoList(videos, finalToken);
+        renderVideoList(videos, finalToken, folder.name);
       } catch (error) {
         console.error("Error listing videos:", error);
       }
@@ -132,7 +132,7 @@ function renderFolderList(folders, token) {
  * Renders a list of videos with "Upload to YouTube" buttons
  * and also updates currentVideos so we can mass-upload them.
  */
-function renderVideoList(videos, accessToken) {
+function renderVideoList(videos, accessToken, folderName) {
   const videoListElem = document.getElementById("videoList");
   videoListElem.innerHTML = "";
 
@@ -140,7 +140,7 @@ function renderVideoList(videos, accessToken) {
   currentVideos = videos;
 
   if (!videos.length) {
-    videoListElem.textContent = "No video files found in this folder.";
+    videoListElem.textContent = `No video files found in ${folderName}.`;
     return;
   }
 
@@ -164,3 +164,39 @@ function renderVideoList(videos, accessToken) {
     videoListElem.appendChild(li);
   });
 }
+
+/*
+Logic for resizing the folder and video sections
+This is a simple drag-to-resize implementation.
+*/
+
+let isDragging = false;
+
+const divider = document.getElementById("divider");
+const foldersSection = document.getElementById("foldersSection");
+const videosSection = document.getElementById("videosSection");
+
+divider.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  isDragging = true;
+});
+
+document.addEventListener("mousemove", (e) => {
+  if (!isDragging) return;
+
+  const containerTop = document.getElementById("resizablePanel").getBoundingClientRect().top;
+  const offset = e.clientY - containerTop;
+
+  const minHeight = 80;
+  const containerHeight = document.getElementById("resizablePanel").offsetHeight;
+
+  const foldersHeight = Math.max(minHeight, offset);
+  const videosHeight = Math.max(minHeight, containerHeight - foldersHeight - 6); // minus divider height
+
+  foldersSection.style.flexBasis = `${foldersHeight}px`;
+  videosSection.style.flexBasis = `${videosHeight}px`;
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+});

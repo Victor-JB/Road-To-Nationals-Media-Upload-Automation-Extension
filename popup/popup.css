@@ -107,6 +107,8 @@ header {
   border: 1px solid #ddd;
   padding: 8px;
   background-color: #fff;
+  min-height: 60px; /* or whatever feels right */
+  resize: vertical;
 }
 
 .videoList {
@@ -125,4 +127,18 @@ header {
   padding: 4px 8px;
   font-size: 0.8rem;
   cursor: pointer;
+}
+
+#resizablePanel {
+  display: flex;
+  flex-direction: column;
+  height: 400px; /* total container height */
+  min-height: 300px;
+  border: 1px solid #ccc;
+}
+
+#divider {
+  height: 6px;
+  background: #ccc;
+  cursor: row-resize;
 }
