@@ -55,9 +55,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === NEW: "Mass Upload" button event ===
   const uploadAllBtn = document.getElementById("uploadAllButton");
+
   uploadAllBtn.addEventListener("click", async () => {
     try {
-      // Grab the user-entered playlist name
       const playlistName = document
         .getElementById("playlistNameInput")
         .value.trim();
@@ -71,19 +71,27 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Get or refresh token
       const token = await getAccessToken();
       if (!token) {
         alert("Failed to retrieve token for mass upload.");
         return;
       }
 
-      // Call our new mass-upload function
+      showUploadStatus("Uploading all videos to playlist...", "progress");
+
+      // You can update this to reflect real-time progress later:
+      for (let i = 0; i < currentVideos.length; i++) {
+        const percent = Math.round((i / currentVideos.length) * 100);
+        updateProgress(percent);
+      }
+
       await massUploadAllVideosToPlaylist(currentVideos, playlistName, token);
-      alert("All videos uploaded and added to the playlist!");
+
+      showUploadStatus("All videos uploaded and added to the playlist!", "success");
+      setTimeout(hideUploadStatus, 4000);
     } catch (err) {
       console.error("Error in mass upload:", err);
-      alert("Mass upload failed. Check console for details.");
+      showUploadStatus("Mass upload failed. Check console for details.", "error");
     }
   });
 
@@ -169,12 +177,19 @@ function renderVideoList(videos, accessToken, folderName) {
     // Existing single upload
     const uploadBtn = document.createElement("button");
     uploadBtn.textContent = "Upload to YouTube";
+    
     uploadBtn.addEventListener("click", async () => {
       try {
+        showUploadStatus(`Uploading ${file.name}...`, "progress");
+    
         await uploadToYouTubeWithAutoReauth(file.id, file.name, accessToken);
+    
+        showUploadStatus(`Successfully uploaded ${file.name}!`, "success");
+    
+        setTimeout(hideUploadStatus, 3000);
       } catch (err) {
         console.error("Upload failed:", err);
-        alert("Error uploading to YouTube. Check console for details.");
+        showUploadStatus(`Failed to upload ${file.name}`, "error");
       }
     });
 
