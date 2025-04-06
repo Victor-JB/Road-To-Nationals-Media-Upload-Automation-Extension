@@ -184,8 +184,8 @@ function renderVideoList(videos, accessToken, folderName) {
 }
 
 /*
-Logic for resizing the folder and video sections
-This is a simple drag-to-resize implementation.
+  Logic for resizing the folder and video sections
+  This is a simple drag-to-resize implementation.
 */
 
 divider.addEventListener("mousedown", (e) => {
@@ -212,3 +212,30 @@ document.addEventListener("mousemove", (e) => {
 document.addEventListener("mouseup", () => {
   isDragging = false;
 });
+
+/*
+  * Functions for showing upload status and progress.
+  * These are used in the uploadToYouTubeWithAutoReauth function.
+*/
+function showUploadStatus(message, mode = "neutral") {
+  const container = document.getElementById("uploadStatus");
+  const msg = document.getElementById("uploadMessage");
+  const progress = document.getElementById("uploadProgress");
+
+  msg.textContent = message;
+  container.style.display = "block";
+  progress.style.display = mode === "progress" ? "block" : "none";
+
+  container.classList.remove("success", "error");
+  if (mode === "success") container.classList.add("success");
+  else if (mode === "error") container.classList.add("error");
+}
+
+function updateProgress(percent) {
+  const progress = document.getElementById("uploadProgress");
+  progress.value = percent;
+}
+
+function hideUploadStatus() {
+  document.getElementById("uploadStatus").style.display = "none";
+}
