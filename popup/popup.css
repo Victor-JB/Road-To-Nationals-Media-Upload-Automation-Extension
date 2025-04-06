@@ -142,7 +142,32 @@ header {
 }
 
 #divider {
-  height: 6px;
-  background: #ccc;
+  height: 8px;
+  background-color: #e0e0e0;
   cursor: row-resize;
+  position: relative;
+}
+
+#divider:hover .divider-grip span {
+  background-color: #555;
+}
+
+.divider-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 4px;
+}
+
+.divider-grip span {
+  width: 6px;
+  height: 6px;
+  background-color: #888;
+  border-radius: 50%;
+  display: inline-block;
+}
+.massUploadContainer {
+  margin-bottom: 12px; /* or whatever spacing looks clean */
 }

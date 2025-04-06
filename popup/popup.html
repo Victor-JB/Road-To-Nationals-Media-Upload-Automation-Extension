@@ -15,7 +15,7 @@
     </header>
 
     <div class="instructions">
-      <p>Select a folder below to show the videos, then click "Upload to YouTube".</p>
+      <p>Select a folder below to show the videos, then click "Upload to YouTube."</p>
       <!-- The "Refresh Folders" button will re-fetch folders from Drive -->
       <button id="refreshFolders">Refresh Folders</button>
       <!-- The search bar for filtering the folder list -->
@@ -32,12 +32,15 @@
         <ul id="folderList" class="folderGrid"></ul>
       </div>
     
-      <div id="divider"></div>
+      <div id="divider">
+        <div class="divider-grip">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
     
       <div class="videosContainer" id="videosSection">
-        <ul id="videoList" class="videoList"></ul>
-        
-        <div class="massUploadContainer">
+        <!-- Move this above the video list -->
+        <div class="massUploadContainer" id="massUploadContainer">
           <input
             id="playlistNameInput"
             type="text"
@@ -51,7 +54,10 @@
             Mass Upload to Playlist
           </button>
         </div>
+      
+        <ul id="videoList" class="videoList"></ul>
       </div>
+      
     </div>
     
   </div>
