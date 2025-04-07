@@ -1,5 +1,6 @@
 
 Critical:
+- zip new package and upload to web store for verification
 - verification for google oauth consent screen
 - recursively go through all folders in a selected folder, find all the videos so
 the folder structure doesn't need to be a certain way
@@ -7,6 +8,9 @@ the folder structure doesn't need to be a certain way
      - possibly find better way to have scores uploaded
      - then make sure score gets put in description
 - use jquery to populate youtube ID fields in road2nat automatically
+
+Non critical:
+- take all content from google doc privacy policy and put in html version
 
 MAKE A "HOW TO USE" doc for first time users, it redirects you to that site +
 have the url in the extension itself; explain how you need to name videos accordingly,
