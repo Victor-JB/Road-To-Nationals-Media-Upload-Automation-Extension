@@ -1,0 +1,3 @@
+Ver 1.1:
+Split prod and dev OAuth clients into two, added code to determine which is which
+to use the correct client id in prod and while testing
