@@ -30,11 +30,17 @@ export async function getAccessToken() {
  */
 export function launchOAuthFlow() {
   return new Promise((resolve) => {
+    const IS_DEV = !chrome.runtime.getManifest().update_url; // true if loaded unpacked
+
+    const CLIENT_ID = IS_DEV
+      ? "1074281984090-n75o8b77ldedh7cmgstd3s7m7envvhg1.apps.googleusercontent.com"
+      : "1074281984090-k9mkmmrlu3vfjkiefouagsremn3suer0.apps.googleusercontent.com";
+
     const REDIRECT_URI = chrome.identity.getRedirectURL();
-    const CLIENT_ID = "1074281984090-n75o8b77ldedh7cmgstd3s7m7envvhg1.apps.googleusercontent.com";
+
     const SCOPES = [
       "https://www.googleapis.com/auth/drive.readonly",
-      "https://www.googleapis.com/auth/youtube",
+      "https://www.googleapis.com/auth/youtube.upload"
     ].join(" ");
 
     const authUrl =
