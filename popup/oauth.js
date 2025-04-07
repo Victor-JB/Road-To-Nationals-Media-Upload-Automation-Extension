@@ -34,7 +34,7 @@ export function launchOAuthFlow() {
 
     const CLIENT_ID = IS_DEV
       ? "1074281984090-n75o8b77ldedh7cmgstd3s7m7envvhg1.apps.googleusercontent.com"
-      : "1074281984090-k9mkmmrlu3vfjkiefouagsremn3suer0.apps.googleusercontent.com";
+      : "1074281984090-u48kuhvpr07has1i5s0tvru2qi790f2p.apps.googleusercontent.com";
 
     const REDIRECT_URI = chrome.identity.getRedirectURL();
 
