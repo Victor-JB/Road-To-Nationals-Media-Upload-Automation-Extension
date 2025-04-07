@@ -3,3 +3,6 @@ Dev Updates:
 Split prod and dev OAuth clients into two, added code to determine which is which
 to use the correct client id in prod and while testing
 Applied for OAuth Consent Screen verification for the Prod credentials
+
+Ver 1.1.1
+Updated manifest to display icons in chrome://extensions
