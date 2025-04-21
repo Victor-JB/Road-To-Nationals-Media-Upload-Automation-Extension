@@ -9,6 +9,7 @@ import {
 import {
   uploadToYouTubeWithAutoReauth,
   massUploadAllVideosToPlaylist,
+  saveVideoIdsToStorage,
 } from "./youtubeApi.js";
 
 // We'll store the fetched folders in this array for searching
@@ -182,7 +183,10 @@ function renderVideoList(videos, accessToken, folderName) {
       try {
         showUploadStatus(`Uploading ${file.name}...`, "progress");
     
-        await uploadToYouTubeWithAutoReauth(file.id, file.name, accessToken);
+        const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, accessToken);
+    
+        // Save the uploaded video ID to storage
+        await saveVideoIdsToStorage([{ title: file.name, id: uploadedVideo.id }]);
     
         showUploadStatus(`Successfully uploaded ${file.name}!`, "success");
     
@@ -190,6 +194,18 @@ function renderVideoList(videos, accessToken, folderName) {
       } catch (err) {
         console.error("Upload failed:", err);
         showUploadStatus(`Failed to upload ${file.name}`, "error");
+      }
+    });
+
+    // contentScript.js
+    chrome.storage.local.get(null, (items) => {
+      for (const [title, videoId] of Object.entries(items)) {
+        console.log(`Autofilling video: ${title} with ID: ${videoId}`);
+        // Add logic to find the correct field on the page and autofill it
+        //const field = document.querySelector(`[data-title="${title}"]`);
+        //if (field) {
+        //  field.value = videoId;
+       // }
       }
     });
 

@@ -3,6 +3,28 @@
 import { getAccessToken, chromeStorageRemove } from "./oauth.js";
 
 /**
+ * Saves uploaded video IDs to chrome.storage.local.
+ * The key is the video title, and the value is the video ID.
+ */
+async function saveVideoIdsToStorage(videoData) {
+  const storageData = {};
+  videoData.forEach(({ title, id }) => {
+    storageData[title] = id;
+  });
+
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set(storageData, () => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else {
+        console.log("Video IDs saved to storage:", storageData);
+        resolve();
+      }
+    });
+  });
+}
+
+/**
  * Resumable upload: fetch the video bytes from Drive, then upload them to YouTube.
  * If token is invalid, we throw an Error with .status = 401.
  */
@@ -184,14 +206,20 @@ export async function massUploadAllVideosToPlaylist(videos, playlistName, access
   const playlist = await createPlaylist(accessToken, playlistName);
   const playlistId = playlist.id;
 
+  const uploadedVideos = [];
+
   // 2) Loop each video => upload => add to playlist
   for (const file of videos) {
     console.log(`Uploading "${file.name}"...`);
     const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, accessToken);
 
-    // The newly uploaded video's ID
-    const videoId = uploadedVideo.id;
-    console.log(`Adding uploaded video ${videoId} to playlist ${playlistId}...`);
-    await addVideoToPlaylist(accessToken, playlistId, videoId);
+    // Save the uploaded video's title and ID
+    uploadedVideos.push({ title: file.name, id: uploadedVideo.id });
+
+    console.log(`Adding uploaded video ${uploadedVideo.id} to playlist ${playlistId}...`);
+    await addVideoToPlaylist(accessToken, playlistId, uploadedVideo.id);
   }
+
+  // Save all uploaded video IDs to storage
+  await saveVideoIdsToStorage(uploadedVideos);
 }
