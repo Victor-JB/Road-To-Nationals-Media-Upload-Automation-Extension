@@ -88,7 +88,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await massUploadAllVideosToPlaylist(currentVideos, playlistName, token);
 
-      showUploadStatus("All videos uploaded and added to the playlist!", "success");
+      // After mass upload, show the collapsible box with all video data
+      showUploadStatus(
+        "All videos uploaded and added to the playlist!",
+        "success",
+        currentVideos.map((file, index) => ({
+          title: file.name,
+          id: uploadedVideos[index].id,
+        }))
+      );
       setTimeout(hideUploadStatus, 4000);
     } catch (err) {
       console.error("Error in mass upload:", err);
@@ -186,9 +194,10 @@ function renderVideoList(videos, accessToken, folderName) {
         const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, accessToken);
     
         // Save the uploaded video ID to storage
-        await saveVideoIdsToStorage([{ title: file.name, id: uploadedVideo.id }]);
+        const videoData = [{ title: file.name, id: uploadedVideo.id }];
+        await saveVideoIdsToStorage(videoData);
     
-        showUploadStatus(`Successfully uploaded ${file.name}!`, "success");
+        showUploadStatus(`Successfully uploaded ${file.name}!`, "success", videoData);
     
         setTimeout(hideUploadStatus, 3000);
       } catch (err) {
@@ -248,10 +257,12 @@ document.addEventListener("mouseup", () => {
   * Functions for showing upload status and progress.
   * These are used in the uploadToYouTubeWithAutoReauth function.
 */
-function showUploadStatus(message, mode = "neutral") {
+function showUploadStatus(message, mode = "neutral", videoData = []) {
   const container = document.getElementById("uploadStatus");
   const msg = document.getElementById("uploadMessage");
   const progress = document.getElementById("uploadProgress");
+  const collapsibleBox = document.getElementById("collapsibleBox");
+  const copyButton = document.getElementById("copyButton");
 
   msg.textContent = message;
   container.style.display = "block";
@@ -260,13 +271,24 @@ function showUploadStatus(message, mode = "neutral") {
   container.classList.remove("success", "error");
   if (mode === "success") container.classList.add("success");
   else if (mode === "error") container.classList.add("error");
-}
 
-function updateProgress(percent) {
-  const progress = document.getElementById("uploadProgress");
-  progress.value = percent;
-}
+  // Populate the collapsible box with video data
+  if (videoData.length > 0) {
+    collapsibleBox.innerHTML = videoData
+      .map(({ title, id }) => `<div>${title}: ${id}</div>`)
+      .join("");
+    collapsibleBox.style.display = "block";
+    copyButton.style.display = "block";
 
-function hideUploadStatus() {
-  document.getElementById("uploadStatus").style.display = "none";
+    // Add copy functionality
+    copyButton.onclick = () => {
+      const textToCopy = videoData.map(({ title, id }) => `${title}: ${id}`).join("\n");
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        alert("Copied to clipboard!");
+      });
+    };
+  } else {
+    collapsibleBox.style.display = "none";
+    copyButton.style.display = "none";
+  }
 }

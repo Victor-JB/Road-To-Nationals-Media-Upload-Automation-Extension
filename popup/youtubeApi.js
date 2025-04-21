@@ -6,7 +6,7 @@ import { getAccessToken, chromeStorageRemove } from "./oauth.js";
  * Saves uploaded video IDs to chrome.storage.local.
  * The key is the video title, and the value is the video ID.
  */
-async function saveVideoIdsToStorage(videoData) {
+export async function saveVideoIdsToStorage(videoData) {
   const storageData = {};
   videoData.forEach(({ title, id }) => {
     storageData[title] = id;

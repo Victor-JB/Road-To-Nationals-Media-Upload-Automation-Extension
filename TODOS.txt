@@ -2,6 +2,9 @@
 
 - after videos are uploaded, save their ids to chrome local storage for when person goes to road to nationals
 
+- ensure loading bar is actually accurate and updates per video when the videos are being loaded
+- ensure the correct prod oauth client is being used for prod, the only one that is going to request google access
+
 Critical:
 - zip new package and upload to web store for verification
 - add a link to the privacy policy in the extension
