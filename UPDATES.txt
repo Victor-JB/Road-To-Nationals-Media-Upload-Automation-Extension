@@ -11,3 +11,4 @@ Ver 1.5
 - Added input box for video name and routine score
 - Added recursive search for videos in a drive folder so videos can be structured in any way
 - Added saving of youtube ids locally to then be able to auto-fill in road to nationals
+- Edits to upload Loading bar

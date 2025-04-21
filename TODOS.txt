@@ -4,6 +4,9 @@
 
 - ensure loading bar is actually accurate and updates per video when the videos are being loaded
 - ensure the correct prod oauth client is being used for prod, the only one that is going to request google access
+- implement queue for upload clicking; as in, the current upload doesn't get killed if person clicks button for next upload
+- add description to the playlist... Total Team score is usually what will puts
+- have the Uploading... section persist for longer, doesn't get killed
 
 Critical:
 - zip new package and upload to web store for verification

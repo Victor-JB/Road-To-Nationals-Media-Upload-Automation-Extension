@@ -292,3 +292,19 @@ function showUploadStatus(message, mode = "neutral", videoData = []) {
     copyButton.style.display = "none";
   }
 }
+
+/**
+ * Hides the upload status UI.
+ */
+function hideUploadStatus() {
+  const container = document.getElementById("uploadStatus");
+  const progress = document.getElementById("uploadProgress");
+  const collapsibleBox = document.getElementById("collapsibleBox");
+  const copyButton = document.getElementById("copyButton");
+
+  // Hide all elements related to the upload status
+  container.style.display = "none";
+  progress.style.display = "none";
+  collapsibleBox.style.display = "none";
+  copyButton.style.display = "none";
+}
