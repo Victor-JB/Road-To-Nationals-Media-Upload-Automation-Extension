@@ -59,10 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   uploadAllBtn.addEventListener("click", async () => {
     try {
-      const playlistName = document
-        .getElementById("playlistNameInput")
-        .value.trim();
-
+      const playlistName = document.getElementById("playlistNameInput").value.trim();
+  
       if (!playlistName) {
         alert("Please enter a playlist name first.");
         return;
@@ -71,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("No videos to upload in this folder!");
         return;
       }
-
+  
       const token = await getAccessToken();
       if (!token) {
         alert("Failed to retrieve token for mass upload.");
@@ -83,21 +81,28 @@ document.addEventListener("DOMContentLoaded", () => {
       // You can update this to reflect real-time progress later:
       for (let i = 0; i < currentVideos.length; i++) {
         const percent = Math.round((i / currentVideos.length) * 100);
-        updateProgress(percent);
-      }
-
-      await massUploadAllVideosToPlaylist(currentVideos, playlistName, token);
-
-      // After mass upload, show the collapsible box with all video data
+  
+      // Show initial status
+      showUploadStatus("Uploading all videos to playlist...", "progress", [], "Step 1: Initializing...");
+  
+      // Call the mass upload function with a step update callback
+      const uploadedVideos = await massUploadAllVideosToPlaylist(
+        currentVideos,
+        playlistName,
+        token,
+        (stepMessage) => {
+          showUploadStatus("Uploading all videos to playlist...", "progress", [], stepMessage);
+        }
+      );
+  
+      // Show success message with all uploaded video data
       showUploadStatus(
         "All videos uploaded and added to the playlist!",
         "success",
-        currentVideos.map((file, index) => ({
-          title: file.name,
-          id: uploadedVideos[index].id,
-        }))
+        uploadedVideos
       );
-      setTimeout(hideUploadStatus, 4000);
+      
+      // setTimeout(hideUploadStatus, 4000);
     } catch (err) {
       console.error("Error in mass upload:", err);
       showUploadStatus("Mass upload failed. Check console for details.", "error");
@@ -189,17 +194,18 @@ function renderVideoList(videos, accessToken, folderName) {
     
     uploadBtn.addEventListener("click", async () => {
       try {
-        showUploadStatus(`Uploading ${file.name}...`, "progress");
+        showUploadStatus(`Uploading ${file.name}...`, "progress", [], "Step 1: Initiating upload session");
     
         const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, accessToken);
+    
+        showUploadStatus(`Uploading ${file.name}...`, "progress", [], "Step 2: Saving video ID to storage");
     
         // Save the uploaded video ID to storage
         const videoData = [{ title: file.name, id: uploadedVideo.id }];
         await saveVideoIdsToStorage(videoData);
-    
         showUploadStatus(`Successfully uploaded ${file.name}!`, "success", videoData);
     
-        setTimeout(hideUploadStatus, 3000);
+        // setTimeout(hideUploadStatus, 3000);
       } catch (err) {
         console.error("Upload failed:", err);
         showUploadStatus(`Failed to upload ${file.name}`, "error");
@@ -257,14 +263,14 @@ document.addEventListener("mouseup", () => {
   * Functions for showing upload status and progress.
   * These are used in the uploadToYouTubeWithAutoReauth function.
 */
-function showUploadStatus(message, mode = "neutral", videoData = []) {
+function showUploadStatus(message, mode = "neutral", videoData = [], stepMessage = "") {
   const container = document.getElementById("uploadStatus");
   const msg = document.getElementById("uploadMessage");
   const progress = document.getElementById("uploadProgress");
   const collapsibleBox = document.getElementById("collapsibleBox");
   const copyButton = document.getElementById("copyButton");
 
-  msg.textContent = message;
+  msg.textContent = `${message} ${stepMessage}`;
   container.style.display = "block";
   progress.style.display = mode === "progress" ? "block" : "none";
 

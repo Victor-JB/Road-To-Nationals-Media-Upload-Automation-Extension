@@ -201,25 +201,46 @@ async function addVideoToPlaylist(accessToken, playlistId, videoId) {
  * - 2) For each video, upload to YouTube
  * - 3) Insert the uploaded videoId into that playlist
  */
-export async function massUploadAllVideosToPlaylist(videos, playlistName, accessToken) {
-  // 1) Create new playlist
+export async function massUploadAllVideosToPlaylist(videos, playlistName, accessToken, updateStepCallback) {
+  // 1) Create a new playlist
+  updateStepCallback("Step 1: Creating playlist...");
   const playlist = await createPlaylist(accessToken, playlistName);
   const playlistId = playlist.id;
 
   const uploadedVideos = [];
+  const totalVideos = videos.length;
 
-  // 2) Loop each video => upload => add to playlist
-  for (const file of videos) {
-    console.log(`Uploading "${file.name}"...`);
-    const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, accessToken);
+  // 2) Loop through each video => upload => add to playlist
+  for (let i = 0; i < totalVideos; i++) {
+    const file = videos[i];
+    const overallProgress = Math.round(((i + 1) / totalVideos) * 100);
+
+    updateStepCallback(`Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${file.name})...`);
+
+    const uploadedVideo = await uploadToYouTubeWithAutoReauth(
+      file.id,
+      file.name,
+      accessToken,
+      (progress) => {
+        updateStepCallback(
+          `Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${file.name})... (${progress}%)`
+        );
+      }
+    );
+
+    updateStepCallback(`Step 3.${i + 1}: Adding video ${i + 1} to playlist (${file.name})...`);
+    await addVideoToPlaylist(accessToken, playlistId, uploadedVideo.id);
 
     // Save the uploaded video's title and ID
     uploadedVideos.push({ title: file.name, id: uploadedVideo.id });
 
-    console.log(`Adding uploaded video ${uploadedVideo.id} to playlist ${playlistId}...`);
-    await addVideoToPlaylist(accessToken, playlistId, uploadedVideo.id);
+    // Update overall progress
+    updateStepCallback(`Step 4: Overall progress: ${overallProgress}%`);
   }
 
-  // Save all uploaded video IDs to storage
+  // 3) Save all uploaded video IDs to storage
+  updateStepCallback("Step 5: Saving video IDs to storage...");
   await saveVideoIdsToStorage(uploadedVideos);
+
+  return uploadedVideos; // Return the uploaded videos for further use
 }
