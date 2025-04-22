@@ -112,6 +112,10 @@ export async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, token
       // Try again with a fresh token
       return await uploadToYouTube(driveFileId, fileName, newToken);
     } else {
+      console.error("Upload failed:", error);
+      // get full error message from api
+      const errorData = await error.response.json();
+      console.error("Error details:", errorData);
       throw error;
     }
   }
@@ -152,6 +156,8 @@ async function createPlaylist(accessToken, playlistName) {
     console.error("Failed to create playlist:", response.status, errorBody);
     const err = new Error("Failed to create playlist");
     err.status = response.status;
+    console.log("Error response:", response);
+    console.log(err);
     err.response = errorBody;
     throw err;
   }
