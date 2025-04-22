@@ -75,12 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Failed to retrieve token for mass upload.");
         return;
       }
-
-      showUploadStatus("Uploading all videos to playlist...", "progress");
-
-      // You can update this to reflect real-time progress later:
-      for (let i = 0; i < currentVideos.length; i++) {
-        const percent = Math.round((i / currentVideos.length) * 100);
   
       // Show initial status
       showUploadStatus("Uploading all videos to playlist...", "progress", [], "Step 1: Initializing...");
