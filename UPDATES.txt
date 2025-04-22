@@ -13,6 +13,3 @@ Ver 1.5
 - Added saving of youtube ids locally to then be able to auto-fill in road to nationals
 - Edits to upload Loading bar, more information 
 - Added blob-based dynamic uploading, where videos are uploaded in chunks and is saved
-
-
-Ok, now like above, do you think you could give me the code integrated to track the actual upload progress of the video file, with the blobs you mentioned?

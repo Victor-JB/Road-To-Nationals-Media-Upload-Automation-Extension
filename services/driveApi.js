@@ -1,6 +1,6 @@
 // driveApi.js
 
-import { getAccessToken, chromeStorageRemove } from "./oauth.js";
+import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
 
 /**
  * Basic function to list all folders in Drive. May throw an error with .status on failure.

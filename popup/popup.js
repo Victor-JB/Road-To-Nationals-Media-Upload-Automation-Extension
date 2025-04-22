@@ -1,16 +1,16 @@
 // popup.js
-import { getAccessToken } from "./oauth.js";
+import { getAccessToken } from "../background/oauth.js";
 import {
   listFoldersInDriveWithAutoReauth,
   listVideosInFolderWithAutoReauth,
-} from "./driveApi.js";
+} from "../services/driveApi.js";
 
 // NEW: import the mass upload function we'll add in youtubeApi.js
 import {
   uploadToYouTubeWithAutoReauth,
   massUploadAllVideosToPlaylist,
   saveVideoIdsToStorage,
-} from "./youtubeApi.js";
+} from "../services/youtubeApi.js";
 
 // We'll store the fetched folders in this array for searching
 let allFolders = [];

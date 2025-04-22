@@ -1,6 +1,6 @@
 // youtubeApi.js
 
-import { getAccessToken, chromeStorageRemove } from "./oauth.js";
+import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
 
 /**
  * Saves uploaded video IDs to chrome.storage.local.
@@ -148,8 +148,11 @@ async function createPlaylist(accessToken, playlistName) {
   );
 
   if (!response.ok) {
+    const errorBody = await response.text(); // Log the response body for debugging
+    console.error("Failed to create playlist:", response.status, errorBody);
     const err = new Error("Failed to create playlist");
     err.status = response.status;
+    err.response = errorBody;
     throw err;
   }
 

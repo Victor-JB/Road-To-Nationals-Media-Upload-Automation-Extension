@@ -5,6 +5,7 @@
 - ensure loading bar is actually accurate and updates per video when the videos are being loaded
 - ensure the correct prod oauth client is being used for prod, the only one that is going to request google access
 - implement queue for upload clicking; as in, the current upload doesn't get killed if person clicks button for next upload
+
 - add description to the playlist... Total Team score is usually what will puts
 - have the Uploading... section persist for longer, doesn't get killed
 
@@ -27,3 +28,4 @@ MAKE A "HOW TO USE" doc for first time users, it redirects you to that site +
 have the url in the extension itself; explain how you need to name videos accordingly,
 what the extension does automatically, how to upload videos, etc.
 
+Ok, recall earlier you said I could do dynamic uploading with blobs where you integrate the code to track the actual upload progress of the video file, with the blobs you mentioned? how would I implement this with the code now here
