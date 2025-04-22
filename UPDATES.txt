@@ -1,4 +1,7 @@
 Ver 1.1:
+Added full youtube-force-ssl scope for playlists
+
+Ver 1.2
 Dev Updates:
 Split prod and dev OAuth clients into two, added code to determine which is which
 to use the correct client id in prod and while testing

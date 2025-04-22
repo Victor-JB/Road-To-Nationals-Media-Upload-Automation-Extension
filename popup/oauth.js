@@ -17,6 +17,7 @@ export function chromeStorageRemove(keys) {
  * Checks chrome.storage.local for an existing token. If none, calls launchOAuthFlow.
  */
 export async function getAccessToken() {
+  chrome.storage.local.remove('accessToken');
   const data = await chromeStorageGet(["accessToken"]);
   if (data.accessToken) {
     return data.accessToken;
@@ -40,7 +41,7 @@ export function launchOAuthFlow() {
 
     const SCOPES = [
       "https://www.googleapis.com/auth/drive.readonly",
-      "https://www.googleapis.com/auth/youtube.upload"
+      "https://www.googleapis.com/auth/youtube.force-ssl"
     ].join(" ");
 
     const authUrl =
