@@ -9,6 +9,16 @@
 - add description to the playlist... Total Team score is usually what will puts
 - have the Uploading... section persist for longer, doesn't get killed
 
+1. fix progress bar -- make it actually legit
+2. add field to add scores for all of the videos, put it in video description
+3. better readme -- use nice template from the other guy
+4. Use jquery to automatically populate fields youtube ids for road 2 nationals whilst logged into the site!
+5. possibly ask road2nationals for api collaboration
+6. more robust error handling
+7. figure out distribution--getting it to more teams if it is useful
+8. figure out how it works on mobile--if it looks nice, works well, can be done quickly upon
+logging into the site, even from the meet
+
 Critical:
 - zip new package and upload to web store for verification
 - add a link to the privacy policy in the extension
