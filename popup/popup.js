@@ -1,5 +1,5 @@
 // popup.js
-import { getAccessToken } from "../background/oauth.js";
+import { getAccessToken, invalidateToken} from "../background/oauth.js";
 import {
   listFoldersInDriveWithAutoReauth,
   listVideosInFolderWithAutoReauth,

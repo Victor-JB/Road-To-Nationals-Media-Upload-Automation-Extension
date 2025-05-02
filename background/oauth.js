@@ -39,10 +39,10 @@ export async function getAccessToken() {
   if (accessToken) return accessToken;
 
   const CLIENT_ID =
-    "826125080495-grboclns40p8m62bnqbv27qu19rc21on.apps.googleusercontent.com";
+    "1074281984090-u48kuhvpr07has1i5s0tvru2qi790f2p.apps.googleusercontent.com";
   const SCOPES = [
     "https://www.googleapis.com/auth/drive.readonly",
-    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
   ].join(" ");
 
   const redirectUri = chrome.identity.getRedirectURL();
