@@ -5,15 +5,10 @@
 * These functions are used to build the description for the uploaded videos
 * and to handle the score input.
 */
-export function buildDescription(originalDescription = '') {
+export function buildDescription(originalDescription) {
     // fall back to blank if user left the box empty
-    const scoreLine = scoreInput.value.trim()
-        ? `Score: ${scoreInput.value.trim()}\n`
-        : '';
-  
-    return `${scoreLine}${originalDescription}
-  
-  Uploaded via GymACT Road2Nationals Uploader`;
+    const scoreLine = "Score: " + originalDescription + "\n\n\nUploaded via GymACT Road2Nationals Uploader\nbit.ly/4jwNnJk"
+    return scoreLine;
   }
 
 

@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const playlistName = document.getElementById("playlistNameInput").value.trim();
       const videoItems = document.querySelectorAll(".videoItem");
-      const videoScoreMap = {};  // New dictionary
+      const videoScoreMap = [];
 
       if (!playlistName) {
         alert("Please enter a playlist name first.");
@@ -77,9 +77,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const scoreInput = videoItem.querySelector(".scoreInput");
         const score = scoreInput ? scoreInput.value.trim() : "";
 
-        const file = currentVideos[index];
+        const file = currentVideos[index]; // Assuming the order is maintained
         if (file && file.id) {
-          videoScoreMap[file.id] = score;
+          videoScoreMap[index] = [file, score];
         }
       });
   
@@ -200,7 +200,7 @@ function renderVideoList(videos, accessToken, folderName) {
     const scoreInput = document.createElement("input");
     scoreInput.type = "text";
     scoreInput.placeholder = "Score (optional)";
-    scoreInput.className = "scoreInput"; // optional, for styling
+    scoreInput.className = "scoreInput";
     li.appendChild(scoreInput);
 
     // Existing single upload
@@ -209,9 +209,10 @@ function renderVideoList(videos, accessToken, folderName) {
     
     uploadBtn.addEventListener("click", async () => {
       try {
+        const score = scoreInput.value.trim();
         showUploadStatus(`Uploading ${file.name}...`, "progress", [], "Step 1: Initiating upload session");
-    
-        const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, scoreInput.value.trim(), accessToken);
+        
+        const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, score, accessToken);
     
         showUploadStatus(`Uploading ${file.name}...`, "progress", [], "Step 2: Saving video ID to storage");
     

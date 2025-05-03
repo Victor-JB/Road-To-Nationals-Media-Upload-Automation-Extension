@@ -25,12 +25,16 @@ export async function saveVideoIdsToStorage(videoData) {
   });
 }
 
+//--------------------------------------------------------------------------- //
 /**
  * Resumable upload: fetch the video bytes from Drive, then upload them to YouTube.
  * If token is invalid, we throw an Error with .status = 401.
  */
 export async function uploadToYouTube(driveFileId, fileName, desc, accessToken) {
   // Step 1: Initiate the upload session
+  const fixed_desc = buildDescription(desc);
+  const cleanTitle = fileName.replace(/\.mp4$/i, "");
+
   let response = await fetch(
     "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
     {
@@ -42,12 +46,13 @@ export async function uploadToYouTube(driveFileId, fileName, desc, accessToken) 
       },
       body: JSON.stringify({
         snippet: {
-          title: fileName,
-          description: buildDescription(desc),
+          title: cleanTitle,
+          description: fixed_desc,
           categoryId: "22", // People & Blogs
         },
         status: {
           privacyStatus: "public", // or "unlisted"/"private"
+          selfDeclaredMadeForKids: true,
         },
       }),
     }
@@ -95,6 +100,7 @@ export async function uploadToYouTube(driveFileId, fileName, desc, accessToken) 
   return youtubeData;
 }
 
+//--------------------------------------------------------------------------- //
 /**
  * Upload to YouTube, but if we see a 401, remove the token & reauth once.
  * IMPORTANT: we now return the final youtubeData so we know the new videoId
@@ -105,8 +111,10 @@ export async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, desc,
   } catch (error) {
     if (error.status === 401) {
       console.warn("Token invalid during upload. Re-authing...");
+
       await chromeStorageRemove(["accessToken"]);
       const newToken = await getAccessToken();
+
       if (!newToken) {
         throw new Error("Re-auth failed.");
       }
@@ -114,9 +122,15 @@ export async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, desc,
       return await uploadToYouTube(driveFileId, fileName, desc, newToken);
     } else {
       console.error("Upload failed:", error);
-      // get full error message from api
-      const errorData = await error.response.json();
-      console.error("Error details:", errorData);
+      // Only attempt to log error details if error.response is defined
+      if (error.response) {
+        try {
+          const errorData = await error.response.json();
+          console.error("Error details:", errorData);
+        } catch (err) {
+          console.error("Failed to parse error response");
+        }
+      }
       throw error;
     }
   }
@@ -168,6 +182,7 @@ async function createPlaylist(accessToken, playlistName) {
   return data; // data.id is the new playlist ID
 }
 
+//--------------------------------------------------------------------------- //
 /**
  * Adds the given YouTube videoId to the specified playlistId.
  */
@@ -205,6 +220,7 @@ async function addVideoToPlaylist(accessToken, playlistId, videoId) {
   return data;
 }
 
+//--------------------------------------------------------------------------- //
 /**
  * Mass-uploads all Drive videos to YouTube and puts them in a NEW playlist.
  * - 1) Create a brand new playlist
@@ -218,14 +234,13 @@ export async function massUploadAllVideosToPlaylist(videosScoreMap, playlistName
   const playlistId = playlist.id;
 
   const uploadedVideos = [];
-  const totalVideos = Object.keys(videosScoreMap).length;
+  const totalVideos = videosScoreMap.length;
 
   // 2) Loop through each video => upload => add to playlist
   for (let i = 0; i < totalVideos; i++) {
-    const fileId = Object.keys(videosScoreMap)[i];
-    const score_desc = videosScoreMap[fileId];
-    const file = currentVideos.find((f) => f.id === fileId);
-    
+    const file = videosScoreMap[i][0];
+    const score_desc = videosScoreMap[i][1];
+
     const overallProgress = Math.round(((i + 1) / totalVideos) * 100);
 
     updateStepCallback(`Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${file.name})...`);
