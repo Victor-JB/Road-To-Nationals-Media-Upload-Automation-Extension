@@ -193,6 +193,10 @@ function renderVideoList(videos, accessToken, folderName) {
   }
 
   videos.forEach((file) => {
+    // lastIndexOf('.') returns -1 if no dot is found ⇢ slice(0, -0) ⇒ full name unchanged
+    const baseName = file.name.slice(0, file.name.lastIndexOf('.')) || file.name;
+    file.name = baseName;   
+
     const li = document.createElement("li");
     li.className = "videoItem";
     li.textContent = `${file.name} (${file.mimeType}) `;

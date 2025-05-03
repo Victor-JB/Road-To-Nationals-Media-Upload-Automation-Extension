@@ -30,10 +30,9 @@ export async function saveVideoIdsToStorage(videoData) {
  * Resumable upload: fetch the video bytes from Drive, then upload them to YouTube.
  * If token is invalid, we throw an Error with .status = 401.
  */
-export async function uploadToYouTube(driveFileId, fileName, desc, accessToken) {
+export async function uploadToYouTube(driveFileId, title, desc, accessToken) {
   // Step 1: Initiate the upload session
   const fixed_desc = buildDescription(desc);
-  const cleanTitle = fileName.replace(/\.mp4$/i, "");
 
   let response = await fetch(
     "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
@@ -46,7 +45,7 @@ export async function uploadToYouTube(driveFileId, fileName, desc, accessToken) 
       },
       body: JSON.stringify({
         snippet: {
-          title: cleanTitle,
+          title: title,
           description: fixed_desc,
           categoryId: "22", // People & Blogs
         },
@@ -105,9 +104,9 @@ export async function uploadToYouTube(driveFileId, fileName, desc, accessToken) 
  * Upload to YouTube, but if we see a 401, remove the token & reauth once.
  * IMPORTANT: we now return the final youtubeData so we know the new videoId
  */
-export async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, desc, token) {
+export async function uploadToYouTubeWithAutoReauth(driveFileId, title, desc, token) {
   try {
-    return await uploadToYouTube(driveFileId, fileName, desc, token);
+    return await uploadToYouTube(driveFileId, title, desc, token);
   } catch (error) {
     if (error.status === 401) {
       console.warn("Token invalid during upload. Re-authing...");
@@ -119,7 +118,7 @@ export async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, desc,
         throw new Error("Re-auth failed.");
       }
       // Try again with a fresh token
-      return await uploadToYouTube(driveFileId, fileName, desc, newToken);
+      return await uploadToYouTube(driveFileId, title, desc, newToken);
     } else {
       console.error("Upload failed:", error);
       // Only attempt to log error details if error.response is defined
