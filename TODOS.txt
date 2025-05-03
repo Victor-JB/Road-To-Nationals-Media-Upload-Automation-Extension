@@ -7,6 +7,8 @@ put in initial template
 3. donate button "buy coffee" in extension and chrome web store
 4. consider making larger
 
+- consider reuahting inside of base functions, not doubling function count with reauth wrappers
+- better error handling in general--making sure entire extension doesn't die over one error
 - better message logging and video progress tracking for mass upload!! should be same as individual uploa
 - ensure loading bar is actually accurate and updates per video when the videos are being loaded
 

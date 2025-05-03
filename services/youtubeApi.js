@@ -211,18 +211,21 @@ async function addVideoToPlaylist(accessToken, playlistId, videoId) {
  * - 2) For each video, upload to YouTube
  * - 3) Insert the uploaded videoId into that playlist
  */
-export async function massUploadAllVideosToPlaylist(videos, playlistName, desc, accessToken, updateStepCallback) {
+export async function massUploadAllVideosToPlaylist(videosScoreMap, playlistName, accessToken, updateStepCallback) {
   // 1) Create a new playlist
   updateStepCallback("Step 1: Creating playlist...");
   const playlist = await createPlaylist(accessToken, playlistName);
   const playlistId = playlist.id;
 
   const uploadedVideos = [];
-  const totalVideos = videos.length;
+  const totalVideos = Object.keys(videosScoreMap).length;
 
   // 2) Loop through each video => upload => add to playlist
   for (let i = 0; i < totalVideos; i++) {
-    const file = videos[i];
+    const fileId = Object.keys(videosScoreMap)[i];
+    const score_desc = videosScoreMap[fileId];
+    const file = currentVideos.find((f) => f.id === fileId);
+    
     const overallProgress = Math.round(((i + 1) / totalVideos) * 100);
 
     updateStepCallback(`Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${file.name})...`);
@@ -230,7 +233,7 @@ export async function massUploadAllVideosToPlaylist(videos, playlistName, desc, 
     const uploadedVideo = await uploadToYouTubeWithAutoReauth(
       file.id,
       file.name,
-      desc,
+      score_desc,
       accessToken,
       (progress) => {
         updateStepCallback(

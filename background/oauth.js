@@ -1,6 +1,7 @@
 // background/oauth.js
 // Handles accessToken persistence and Chrome identity OAuth flow.
 
+// -------------------------------------------------------------------------- //
 export function chromeStorageGet(keys) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get(keys, (items) => {
@@ -10,6 +11,7 @@ export function chromeStorageGet(keys) {
   });
 }
 
+// -------------------------------------------------------------------------- //
 export function chromeStorageSet(items) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.set(items, () => {
@@ -19,6 +21,7 @@ export function chromeStorageSet(items) {
   });
 }
 
+// -------------------------------------------------------------------------- //
 export function chromeStorageRemove(keys) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.remove(keys, () => {
@@ -28,9 +31,7 @@ export function chromeStorageRemove(keys) {
   });
 }
 
-/** Clears only the access token. */
-export const invalidateToken = () => chromeStorageRemove(['accessToken']);
-
+// -------------------------------------------------------------------------- //
 /**
  * Returns a (cached) OAuth 2.0 access token or launches interactive flow.
  */

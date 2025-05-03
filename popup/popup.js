@@ -61,9 +61,9 @@ document.addEventListener("DOMContentLoaded", () => {
   uploadAllBtn.addEventListener("click", async () => {
     try {
       const playlistName = document.getElementById("playlistNameInput").value.trim();
-      const scoreInput = document.getElementById('scoreInput').value.trim();
-  
-      alert("score inputted: " + scoreInput);
+      const videoItems = document.querySelectorAll(".videoItem");
+      const videoScoreMap = {};  // New dictionary
+
       if (!playlistName) {
         alert("Please enter a playlist name first.");
         return;
@@ -72,6 +72,16 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("No videos to upload in this folder!");
         return;
       }
+
+      videoItems.forEach((videoItem, index) => {
+        const scoreInput = videoItem.querySelector(".scoreInput");
+        const score = scoreInput ? scoreInput.value.trim() : "";
+
+        const file = currentVideos[index];
+        if (file && file.id) {
+          videoScoreMap[file.id] = score;
+        }
+      });
   
       const token = await getAccessToken();
       if (!token) {
@@ -84,9 +94,8 @@ document.addEventListener("DOMContentLoaded", () => {
   
       // Call the mass upload function with a step update callback
       const uploadedVideos = await massUploadAllVideosToPlaylist(
-        currentVideos,
+        videoScoreMap,
         playlistName,
-        scoreInput,
         token,
         (stepMessage) => {
           showUploadStatus("Uploading all videos to playlist...", "progress", [], stepMessage);
@@ -185,11 +194,12 @@ function renderVideoList(videos, accessToken, folderName) {
 
   videos.forEach((file) => {
     const li = document.createElement("li");
+    li.className = "videoItem";
     li.textContent = `${file.name} (${file.mimeType}) `;
 
     const scoreInput = document.createElement("input");
     scoreInput.type = "text";
-    scoreInput.placeholder = "Score";
+    scoreInput.placeholder = "Score (optional)";
     scoreInput.className = "scoreInput"; // optional, for styling
     li.appendChild(scoreInput);
 
@@ -216,19 +226,6 @@ function renderVideoList(videos, accessToken, folderName) {
         showUploadStatus(`Failed to upload ${file.name}`, "error");
       }
     });
-
-    // contentScript.js
-    chrome.storage.local.get(null, (items) => {
-      for (const [title, videoId] of Object.entries(items)) {
-        console.log(`Autofilling video: ${title} with ID: ${videoId}`);
-        // Add logic to find the correct field on the page and autofill it
-        //const field = document.querySelector(`[data-title="${title}"]`);
-        //if (field) {
-        //  field.value = videoId;
-       // }
-      }
-    });
-
     li.appendChild(uploadBtn);
     videoListElem.appendChild(li);
   });
