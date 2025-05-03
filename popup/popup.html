@@ -40,18 +40,26 @@
     
       <div class="videosContainer" id="videosSection">
         <!-- Move this above the video list -->
-        <div class="massUploadContainer" id="massUploadContainer">
+        <div class="massUploadContainer" id="massUploadContainer" style="display:flex;align-items:center;gap:8px">
+          <!-- playlist name (already there) -->
           <input
-            id="playlistNameInput"
-            type="text"
-            placeholder="Playlist name..."
-            style="margin-top: 8px;"
+              id="playlistNameInput"
+              type="text"
+              placeholder="Playlist name…"
+              style="margin-top:8px;"
           />
-          <button
-            id="uploadAllButton"
-            style="margin-left: 8px;"
-          >
-            Mass Upload to Playlist
+
+          <!-- routine score input -->
+          <input
+              id="scoreInput"
+              type="text"
+              placeholder="Score: "
+              style="margin-top:8px;width:90px;"
+          />
+
+          <!-- mass‑upload button (already there) -->
+          <button id="uploadAllButton" style="margin-top:8px;">
+            Mass Upload to Playlist
           </button>
         </div>
         

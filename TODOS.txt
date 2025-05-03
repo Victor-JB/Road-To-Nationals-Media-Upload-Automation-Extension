@@ -1,9 +1,17 @@
 - change Workflow & Planning tag, that is not the extension...
 
+feature ideas:
+1. drop down of team members who are added, so user doesn't have to reinput video name every time, can just 
+put in initial template
+2. streamlining process further, reducing number of fields user needs to input, standardize and save preferences
+3. donate button "buy coffee" in extension and chrome web store
+4. consider making larger
+
 - after videos are uploaded, save their ids to chrome local storage for when person goes to road to nationals
 
 - ensure loading bar is actually accurate and updates per video when the videos are being loaded
 - ensure the correct prod oauth client is being used for prod, the only one that is going to request google access
+     - get oauth for this 
 - implement queue for upload clicking; as in, the current upload doesn't get killed if person clicks button for next upload
 
 - add description to the playlist... Total Team score is usually what will puts

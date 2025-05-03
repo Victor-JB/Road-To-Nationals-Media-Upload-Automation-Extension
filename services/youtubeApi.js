@@ -1,11 +1,12 @@
 // youtubeApi.js
 
 import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
+import { buildDescription } from "../utils/utils.js";
 
 /**
  * Saves uploaded video IDs to chrome.storage.local.
  * The key is the video title, and the value is the video ID.
- */
+*/
 export async function saveVideoIdsToStorage(videoData) {
   const storageData = {};
   videoData.forEach(({ title, id }) => {
@@ -28,7 +29,7 @@ export async function saveVideoIdsToStorage(videoData) {
  * Resumable upload: fetch the video bytes from Drive, then upload them to YouTube.
  * If token is invalid, we throw an Error with .status = 401.
  */
-export async function uploadToYouTube(driveFileId, fileName, accessToken) {
+export async function uploadToYouTube(driveFileId, fileName, desc, accessToken) {
   // Step 1: Initiate the upload session
   let response = await fetch(
     "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
@@ -42,7 +43,7 @@ export async function uploadToYouTube(driveFileId, fileName, accessToken) {
       body: JSON.stringify({
         snippet: {
           title: fileName,
-          description: "Uploaded via Google Drive to YouTube",
+          description: buildDescription(desc),
           categoryId: "22", // People & Blogs
         },
         status: {
@@ -98,9 +99,9 @@ export async function uploadToYouTube(driveFileId, fileName, accessToken) {
  * Upload to YouTube, but if we see a 401, remove the token & reauth once.
  * IMPORTANT: we now return the final youtubeData so we know the new videoId
  */
-export async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, token) {
+export async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, desc, token) {
   try {
-    return await uploadToYouTube(driveFileId, fileName, token);
+    return await uploadToYouTube(driveFileId, fileName, desc, token);
   } catch (error) {
     if (error.status === 401) {
       console.warn("Token invalid during upload. Re-authing...");
@@ -110,7 +111,7 @@ export async function uploadToYouTubeWithAutoReauth(driveFileId, fileName, token
         throw new Error("Re-auth failed.");
       }
       // Try again with a fresh token
-      return await uploadToYouTube(driveFileId, fileName, newToken);
+      return await uploadToYouTube(driveFileId, fileName, desc, newToken);
     } else {
       console.error("Upload failed:", error);
       // get full error message from api
@@ -210,7 +211,7 @@ async function addVideoToPlaylist(accessToken, playlistId, videoId) {
  * - 2) For each video, upload to YouTube
  * - 3) Insert the uploaded videoId into that playlist
  */
-export async function massUploadAllVideosToPlaylist(videos, playlistName, accessToken, updateStepCallback) {
+export async function massUploadAllVideosToPlaylist(videos, playlistName, desc, accessToken, updateStepCallback) {
   // 1) Create a new playlist
   updateStepCallback("Step 1: Creating playlist...");
   const playlist = await createPlaylist(accessToken, playlistName);
@@ -229,6 +230,7 @@ export async function massUploadAllVideosToPlaylist(videos, playlistName, access
     const uploadedVideo = await uploadToYouTubeWithAutoReauth(
       file.id,
       file.name,
+      desc,
       accessToken,
       (progress) => {
         updateStepCallback(
