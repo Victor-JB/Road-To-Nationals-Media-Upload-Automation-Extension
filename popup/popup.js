@@ -61,6 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
   uploadAllBtn.addEventListener("click", async () => {
     try {
       const playlistName = document.getElementById("playlistNameInput").value.trim();
+      const playlistDescription  = document.getElementById("playlistDescriptionInput").value.trim(); 
       const videoItems = document.querySelectorAll(".videoItem");
       const videoScoreMap = [];
 
@@ -96,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const uploadedVideos = await massUploadAllVideosToPlaylist(
         videoScoreMap,
         playlistName,
+        playlistDescription,
         token,
         (stepMessage) => {
           showUploadStatus("Uploading all videos to playlist...", "progress", [], stepMessage);

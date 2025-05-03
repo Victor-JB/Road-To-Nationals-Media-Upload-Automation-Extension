@@ -142,11 +142,12 @@ export async function uploadToYouTubeWithAutoReauth(driveFileId, title, desc, to
  * Creates a new YouTube playlist with the given name.
  * Requires a token with playlist write permission (often "youtube" or "youtube.force-ssl" scope).
  */
-async function createPlaylist(accessToken, playlistName) {
+async function createPlaylist(accessToken, playlistName, playlistDescription) {
+  const desc_str = "\n\n\nPlaylist automatically generated via GymACT Road2Nationals Uploader";
   const playlistMeta = {
     snippet: {
       title: playlistName,
-      description: "Created via extension mass upload",
+      description: playlistDescription + desc_str || desc_str,
     },
     status: {
       privacyStatus: "public", // or "unlisted"/"private"
@@ -226,10 +227,16 @@ async function addVideoToPlaylist(accessToken, playlistId, videoId) {
  * - 2) For each video, upload to YouTube
  * - 3) Insert the uploaded videoId into that playlist
  */
-export async function massUploadAllVideosToPlaylist(videosScoreMap, playlistName, accessToken, updateStepCallback) {
+export async function massUploadAllVideosToPlaylist(
+  videosScoreMap, 
+  playlistName, 
+  playlistDescription, 
+  accessToken, 
+  updateStepCallback
+) {
   // 1) Create a new playlist
   updateStepCallback("Step 1: Creating playlist...");
-  const playlist = await createPlaylist(accessToken, playlistName);
+  const playlist = await createPlaylist(accessToken, playlistName, playlistDescription);
   const playlistId = playlist.id;
 
   const uploadedVideos = [];

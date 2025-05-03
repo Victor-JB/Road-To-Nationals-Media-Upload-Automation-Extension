@@ -8,11 +8,18 @@ Ver 1.2
 Dev Updates:
 Split prod and dev OAuth clients into two, added code to determine which is which
 to use the correct client id in prod and while testing
-Applied for OAuth Consent Screen verification for the Prod credentials
 
-Ver 1.5
-- Added input box for video name and routine score
+Ver 1.2.5
+- Better progress bar 
+- User can enter score
+- Needed refactoring
+- Made for Kids tag specified
+
+PENDING: Applied for OAuth Consent Screen verification for the Prod credentials
+
+Ver 1.3
 - Added recursive search for videos in a drive folder so videos can be structured in any way
+- Added box for playlist description
 - Added saving of youtube ids locally to then be able to auto-fill in road to nationals
 - Edits to upload Loading bar, more information 
 - Added blob-based dynamic uploading, where videos are uploaded in chunks and is saved
