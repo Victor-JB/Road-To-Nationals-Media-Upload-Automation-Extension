@@ -1,16 +1,15 @@
 // popup.js
-import { getAccessToken, invalidateToken} from "../background/oauth.js";
+import { getAccessToken } from "../background/oauth.js";
 import {
   listFoldersInDriveWithAutoReauth,
   listVideosInFolderWithAutoReauth,
 } from "../services/driveApi.js";
-
-// NEW: import the mass upload function we'll add in youtubeApi.js
 import {
   uploadToYouTubeWithAutoReauth,
   massUploadAllVideosToPlaylist,
   saveVideoIdsToStorage,
 } from "../services/youtubeApi.js";
+import { showUploadStatus } from "../utils/utils.js";
 
 // We'll store the fetched folders in this array for searching
 let allFolders = [];
@@ -25,11 +24,14 @@ const divider = document.getElementById("divider");
 const foldersSection = document.getElementById("foldersSection");
 const videosSection = document.getElementById("videosSection");
 
+// -------------------------------------------------------------------------- //
 document.addEventListener("DOMContentLoaded", () => {
   
   const refreshFoldersBtn = document.getElementById("refreshFolders");
   const folderSearchInput = document.getElementById("folderSearch");
+  const uploadAllBtn = document.getElementById("uploadAllButton");
 
+  // == refresh folders button == //
   refreshFoldersBtn.addEventListener("click", async () => {
     const token = await getAccessToken();
     if (!token) {
@@ -45,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Filter the folder list as user types
+  // == search folders event listener == //
   folderSearchInput.addEventListener("input", () => {
     const searchValue = folderSearchInput.value.toLowerCase();
     const filtered = allFolders.filter((folder) =>
@@ -54,14 +56,14 @@ document.addEventListener("DOMContentLoaded", () => {
     renderFolderList(filtered, null);
   });
 
-  // === NEW: "Mass Upload" button event ===
-  const uploadAllBtn = document.getElementById("uploadAllButton");
 
+  // == upload all videos button == //
   uploadAllBtn.addEventListener("click", async () => {
     try {
       const playlistName = document.getElementById("playlistNameInput").value.trim();
       const scoreInput = document.getElementById('scoreInput').value.trim();
   
+      alert("score inputted: " + scoreInput);
       if (!playlistName) {
         alert("Please enter a playlist name first.");
         return;
@@ -98,7 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
         uploadedVideos
       );
       
-      // setTimeout(hideUploadStatus, 4000);
     } catch (err) {
       console.error("Error in mass upload:", err);
       showUploadStatus("Mass upload failed. Check console for details.", "error");
@@ -116,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+// -------------------------------------------------------------------------- //
 /**
  * Renders the folder list. "Show Videos" calls listVideosInFolderWithAutoReauth.
  */
@@ -164,6 +166,7 @@ function renderFolderList(folders, token) {
   });
 }
 
+// -------------------------------------------------------------------------- //
 /**
  * Renders a list of videos with "Upload to YouTube" buttons
  * and also updates currentVideos so we can mass-upload them.
@@ -184,6 +187,12 @@ function renderVideoList(videos, accessToken, folderName) {
     const li = document.createElement("li");
     li.textContent = `${file.name} (${file.mimeType}) `;
 
+    const scoreInput = document.createElement("input");
+    scoreInput.type = "text";
+    scoreInput.placeholder = "Score";
+    scoreInput.className = "scoreInput"; // optional, for styling
+    li.appendChild(scoreInput);
+
     // Existing single upload
     const uploadBtn = document.createElement("button");
     uploadBtn.textContent = "Upload to YouTube";
@@ -192,16 +201,16 @@ function renderVideoList(videos, accessToken, folderName) {
       try {
         showUploadStatus(`Uploading ${file.name}...`, "progress", [], "Step 1: Initiating upload session");
     
-        const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, accessToken);
+        const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, scoreInput.value.trim(), accessToken);
     
         showUploadStatus(`Uploading ${file.name}...`, "progress", [], "Step 2: Saving video ID to storage");
     
         // Save the uploaded video ID to storage
         const videoData = [{ title: file.name, id: uploadedVideo.id }];
         await saveVideoIdsToStorage(videoData);
+        
         showUploadStatus(`Successfully uploaded ${file.name}!`, "success", videoData);
     
-        // setTimeout(hideUploadStatus, 3000);
       } catch (err) {
         console.error("Upload failed:", err);
         showUploadStatus(`Failed to upload ${file.name}`, "error");
@@ -225,6 +234,7 @@ function renderVideoList(videos, accessToken, folderName) {
   });
 }
 
+// -------------------------------------------------------------------------- //
 /*
   Logic for resizing the folder and video sections
   This is a simple drag-to-resize implementation.
@@ -254,59 +264,3 @@ document.addEventListener("mousemove", (e) => {
 document.addEventListener("mouseup", () => {
   isDragging = false;
 });
-
-/*
-  * Functions for showing upload status and progress.
-  * These are used in the uploadToYouTubeWithAutoReauth function.
-*/
-function showUploadStatus(message, mode = "neutral", videoData = [], stepMessage = "") {
-  const container = document.getElementById("uploadStatus");
-  const msg = document.getElementById("uploadMessage");
-  const progress = document.getElementById("uploadProgress");
-  const collapsibleBox = document.getElementById("collapsibleBox");
-  const copyButton = document.getElementById("copyButton");
-
-  msg.textContent = `${message} ${stepMessage}`;
-  container.style.display = "block";
-  progress.style.display = mode === "progress" ? "block" : "none";
-
-  container.classList.remove("success", "error");
-  if (mode === "success") container.classList.add("success");
-  else if (mode === "error") container.classList.add("error");
-
-  // Populate the collapsible box with video data
-  if (videoData.length > 0) {
-    collapsibleBox.innerHTML = videoData
-      .map(({ title, id }) => `<div>${title}: ${id}</div>`)
-      .join("");
-    collapsibleBox.style.display = "block";
-    copyButton.style.display = "block";
-
-    // Add copy functionality
-    copyButton.onclick = () => {
-      const textToCopy = videoData.map(({ title, id }) => `${title}: ${id}`).join("\n");
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        alert("Copied to clipboard!");
-      });
-    };
-  } else {
-    collapsibleBox.style.display = "none";
-    copyButton.style.display = "none";
-  }
-}
-
-/**
- * Hides the upload status UI.
- */
-function hideUploadStatus() {
-  const container = document.getElementById("uploadStatus");
-  const progress = document.getElementById("uploadProgress");
-  const collapsibleBox = document.getElementById("collapsibleBox");
-  const copyButton = document.getElementById("copyButton");
-
-  // Hide all elements related to the upload status
-  container.style.display = "none";
-  progress.style.display = "none";
-  collapsibleBox.style.display = "none";
-  copyButton.style.display = "none";
-}

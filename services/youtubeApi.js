@@ -251,6 +251,7 @@ export async function massUploadAllVideosToPlaylist(videos, playlistName, desc, 
 
   // 3) Save all uploaded video IDs to storage
   updateStepCallback("Step 5: Saving video IDs to storage...");
+  
   await saveVideoIdsToStorage(uploadedVideos);
 
   return uploadedVideos; // Return the uploaded videos for further use

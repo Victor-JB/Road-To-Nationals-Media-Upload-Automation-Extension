@@ -7,9 +7,9 @@ put in initial template
 3. donate button "buy coffee" in extension and chrome web store
 4. consider making larger
 
-- after videos are uploaded, save their ids to chrome local storage for when person goes to road to nationals
-
+- better message logging and video progress tracking for mass upload!! should be same as individual uploa
 - ensure loading bar is actually accurate and updates per video when the videos are being loaded
+
 - ensure the correct prod oauth client is being used for prod, the only one that is going to request google access
      - get oauth for this 
 - implement queue for upload clicking; as in, the current upload doesn't get killed if person clicks button for next upload
