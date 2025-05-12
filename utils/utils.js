@@ -11,7 +11,6 @@ export function buildDescription(originalDescription) {
     return scoreLine;
   }
 
-
 /*
   * Functions for showing upload status and progress.
   * These are used in the uploadToYouTubeWithAutoReauth function.

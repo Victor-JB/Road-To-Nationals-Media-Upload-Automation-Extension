@@ -27,27 +27,57 @@ export async function listFoldersInDrive(accessToken) {
 
 // -------------------------------------------------------------------------- //
 /**
- * Lists only video files in a given folder. May throw an error with .status on failure.
+ * Recursively gathers *all* video files inside `folderId`.
+ *
+ * @param {string} accessToken – OAuth token with at least Drive.readonly scope
+ * @param {string} folderId    – ID of the root folder the user clicked
+ * @returns {Promise<Array<{id:string,name:string,mimeType:string,parent:string}>>}
  */
 export async function listVideosInFolder(accessToken, folderId) {
-  const query = encodeURIComponent(
-    `'${folderId}' in parents and mimeType contains 'video/' and trashed=false`
-  );
-  const fields = encodeURIComponent("files(id,name,mimeType)");
-  const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}`;
+  const allVideos = [];
 
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  /**
+   * Internal helper that lists one level and recurses into sub‑folders.
+   * @param {string} id – folder ID to scan
+   */
+  async function walkFolder(id) {
+    let pageToken = null;
 
-  if (!response.ok) {
-    const err = new Error(`Failed to list videos in folder: ${response.status}`);
-    err.status = response.status;
-    throw err;
+    do {
+      const q          = encodeURIComponent(`'${id}' in parents and trashed = false`);
+      const fields     = encodeURIComponent(
+        "nextPageToken, files(id,name,mimeType,parents)"
+      );
+      const url        =
+        `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}` +
+        (pageToken ? `&pageToken=${pageToken}` : "") +
+        "&pageSize=1000";               // max allowed
+
+      const resp = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!resp.ok) {
+        const err = new Error(`Drive list failed (${resp.status})`);
+        err.status = resp.status;
+        throw err;
+      }
+
+      const data = await resp.json();
+      pageToken  = data.nextPageToken || null;
+
+      (data.files || []).forEach((f) => {
+        if (f.mimeType === "application/vnd.google-apps.folder") {
+          // 📂 Recurse into sub‑folder
+          walkFolder(f.id).catch(console.error);
+        } else if (f.mimeType.startsWith("video/")) {
+          allVideos.push(f);
+        }
+      });
+    } while (pageToken);
   }
 
-  const data = await response.json();
-  return data.files || [];
+  await walkFolder(folderId);
+  return allVideos;
 }
 
 // -------------------------------------------------------------------------- //
@@ -62,7 +92,7 @@ export async function listFoldersInDriveWithAutoReauth(token) {
       console.warn("Token invalid while listing folders. Re-authing...");
 
       await chromeStorageRemove(["accessToken"]);
-      
+
       const newToken = await getAccessToken();
       if (!newToken) {
         throw new Error("Re-auth failed for listing folders.");

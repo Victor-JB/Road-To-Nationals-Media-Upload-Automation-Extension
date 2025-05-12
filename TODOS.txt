@@ -1,11 +1,26 @@
 - change Workflow & Planning tag, that is not the extension...
 
 feature ideas:
+
+high priority:
+1. implement queue for upload clicking; as in, the current upload doesn't get killed if person clicks button for next upload
+2. MAKE SURE UPLOAD DOESN'T DIE IF user closes extension, some way of remembering upload progress
+2.5 Also incliude a cancel button to cancel upload
+3. PARELLEL UPLOADS--upload multiple videos at once for mass upload
+4. better progress bar, with blobs so that video progress is tracked
+5. better ui, looks a little cleaner
+Upload all of these safeguardand performance enhancers before releasing next version to puboic
+
+
+
 1. drop down of team members who are added, so user doesn't have to reinput video name every time, can just 
 put in initial template
 2. streamlining process further, reducing number of fields user needs to input, standardize and save preferences
 3. donate button "buy coffee" in extension and chrome web store
 4. consider making larger
+5
+Later:
+- CV to read score values off of score sheet
 
 - consider reuahting inside of base functions, not doubling function count with reauth wrappers
 - better error handling in general--making sure entire extension doesn't die over one error
@@ -14,13 +29,8 @@ put in initial template
 
 - ensure the correct prod oauth client is being used for prod, the only one that is going to request google access
      - get oauth for this 
-- implement queue for upload clicking; as in, the current upload doesn't get killed if person clicks button for next upload
-
-- add description to the playlist... Total Team score is usually what will puts
-- have the Uploading... section persist for longer, doesn't get killed
 
 1. fix progress bar -- make it actually legit
-2. add field to add scores for all of the videos, put it in video description
 3. better readme -- use nice template from the other guy
 4. Use jquery to automatically populate fields youtube ids for road 2 nationals whilst logged into the site!
 5. possibly ask road2nationals for api collaboration

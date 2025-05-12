@@ -1,232 +1,309 @@
-html, body {
-  margin: 0;
-  padding: 0;
-  font-family: sans-serif;
-  height: 100%;
-}
+/* Popup stylesheet — minimal‑diff polish 05‑05‑2025 */
 
-#popupContainer {
-  width: 600px;
-  height: 400px;
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  box-sizing: border-box;
-  background-color: #fdfdfd;
-}
+/* ------------------------------
+   0.  Root + base reset
+   ------------------------------ */
+   :root {
+    --clr-bg: #fdfdfd;
+    --clr-border: #e0e0e0;
+    --clr-border-dark: #ccc;
+    --clr-text: #212121;
+    --clr-accent: #c62828;
+    --radius: 8px;
+    --shadow: 0 1px 4px rgba(0,0,0,.08);
+    --shadow-hover: 0 4px 8px rgba(0,0,0,.12);
+  }
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    height: 100%;
+    color: var(--clr-text);
+    background: var(--clr-bg);
+    min-width: 600px;
+  }
+  
+  /* Utility — unify default button + input look */
+  button,
+  input[type="text"] {
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+  
+  button {
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid var(--clr-border-dark);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  }
+  button:hover {
+    background: var(--clr-accent);
+    color: #fff;
+    box-shadow: var(--shadow);
+  }
+  button:focus-visible {
+    outline: 2px solid var(--clr-accent);
+    outline-offset: 1px;
+  }
+  
+  input[type="text"] {
+    border: 1px solid var(--clr-border-dark);
+    border-radius: var(--radius);
+    padding: 6px 8px;
+    background: #fff;
+    transition: border 0.15s;
+  }
+  input[type="text"]:focus {
+    border-color: var(--clr-accent);
+    outline: none;
+  }
+  
+  /* ------------------------------
+     1.  Popup shell
+     ------------------------------ */
+  #popupContainer {
+    width: 600px;
+    min-width: 600px;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    box-sizing: border-box;
+    background-color: var(--clr-bg);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  
+  /* ------------------------------
+     2.  Header & instructions
+     ------------------------------ */
+  header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .headerLogo {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+    object-fit: contain;
+  }
+  
+  .extensionTitle {
+    font-size: 1.2rem;
+    margin: 0;
+  }
+  
+  .instructions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  .instructions p {
+    margin: 0;
+    flex: 1;
+  }
+  
+  .folderSearchInput {
+    width: 140px;
+    flex-shrink: 0;
+  }
+  
+  /* ------------------------------
+     3.  Folder section
+     ------------------------------ */
+  .foldersContainer {
+    overflow-y: auto;
+    margin-bottom: 8px;
+    padding: 8px 0;
+    flex: 0 0 auto;          /* NEW: let JS‑set height win over flex */
+    min-height: 60px;  
+  }
+  
+  .folderGrid {
+    list-style: none;
+    padding: 0 4px;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 16px;
+  }
+  
+  .folderItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    background: #fff;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius);
+    padding: 12px 8px;
+    transition: transform 0.15s, box-shadow 0.2s;
+  }
+  .folderItem:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+  
+  .folderItem img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    margin-bottom: 6px;
+  }
+  
+  .folderItem span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    word-break: break-word;
+  }
+  
+  .folderItem button {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+  }
+  
+  /* ------------------------------
+     4.  Divider (drag bar)
+    ------------------------------ */
 
-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
+  #resizablePanel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 
-.headerLogo {
-  width: 40px;
-  height: 40px;
-  margin-right: 10px;
-  object-fit: contain;
-}
+  }
 
-.extensionTitle {
-  font-size: 1.2rem;
-  margin: 0;
-}
-
-.instructions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-}
-.instructions p {
-  margin: 0;
-  flex: 1; /* let the paragraph expand, pushing the button & search to the right if needed */
-}
-.instructions button {
-  padding: 6px 12px;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.folderSearchInput {
-  padding: 6px;
-  font-size: 0.9rem;
-  width: 140px;
-  flex-shrink: 0;
-}
-
-.foldersContainer {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  margin-bottom: 8px;
-  padding: 8px;
-  border: none; /* just in case */
-  background-color: #fdfdfd;
-}
-
-.folderGrid {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-gap: 16px;
-}
-
-.folderItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.folderItem img {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  margin-bottom: 4px;
-}
-
-.folderItem span {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.folderItem button {
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.videosContainer {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  border: none; /* remove double border conflict */
-  padding: 8px;
-  background-color: #fdfdfd; /* match popupContainer */
-  min-height: 60px;
-  resize: none;
-  position: relative;
-  box-shadow: none;
-}
-
-.videoList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.videoList li {
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-}
-
-.videoList button {
-  margin-left: 8px;
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-#resizablePanel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: 400px; /* total container height */
-  min-height: 300px;
-  border: none;
-}
-
-#divider {
-  height: 6px; /* make it sleeker */
-  background-color: #ccc; /* solid, no gradient */
-  cursor: row-resize;
-  position: relative;
-  border: none;
-  box-shadow: none;
-  z-index: 2; /* ensure it's above any panel edge */
-}
-
-#divider::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #ccc; /* match divider */
-  z-index: -1;
-}
-
-.divider-grip {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: 4px;
-}
-
-.divider-grip span {
-  width: 6px;
-  height: 6px;
-  background-color: #777;
-  border-radius: 50%;
-}
-
-#divider:hover .divider-grip span {
-  background-color: #555;
-}
-
-.massUploadContainer {
-  margin-bottom: 12px; /* or whatever spacing looks clean */
-}
-
-.collapsible-box {
-  margin-top: 10px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  background-color: #f9f9f9;
-  max-height: 200px;
-  overflow-y: auto;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.collapsible-box {
-  border-color: #4caf50;
-}
-
-.collapsible-box {
-  border-color: #f44336;
-}
-
-.upload-status {
-  background-color: #f5f5f5;
-  border: 1px solid #ccc;
-  padding: 8px;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-  border-radius: 4px;
-  text-align: center;
-}
-
-.upload-status.success {
-  border-color: #4caf50;
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.upload-status.error {
-  border-color: #f44336;
-  background-color: #ffebee;
-  color: #c62828;
-}
-
-.scoreInput {
-  margin: 6px 0;
-  width: 100px;
-  padding: 4px;
-  font-size: 0.9em;
-}
+  #divider {
+    height: 6px;
+    background-color: var(--clr-border-dark);
+    cursor: row-resize;
+    position: relative;
+  }
+  
+  .divider-grip {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    gap: 4px;
+  }
+  .divider-grip span {
+    width: 6px;
+    height: 6px;
+    background-color: #777;
+    border-radius: 50%;
+    transition: background 0.15s;
+  }
+  #divider:hover .divider-grip span {
+    background-color: #555;
+  }
+  
+  /* ------------------------------
+     5.  Videos section
+     ------------------------------ */
+  .videosContainer {
+    flex: 0 0 auto;          /* NEW: let JS‑set height win over flex */
+    min-height: 60px;  
+    overflow-y: auto;
+    padding: 8px 0;
+    background-color: var(--clr-bg);
+    position: relative;
+  }
+  
+  .videoList {
+    list-style: none;
+    padding: 0 4px;
+    margin: 0;
+  }
+  
+  .videoList li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 6px;
+    margin-bottom: 6px;
+    background: #fff;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    transition: box-shadow 0.15s;
+  }
+  .videoList li:hover {
+    box-shadow: var(--shadow-hover);
+  }
+  
+  .videoList button {
+    margin-left: auto; /* push action buttons to the right */
+    font-size: 0.8rem;
+  }
+  
+  /* score input */
+  .scoreInput {
+    width: 100px;
+    padding: 4px;
+  }
+  
+  /* ------------------------------
+     6.  Upload status / collapsible boxes
+     ------------------------------ */
+  .upload-status {
+    background-color: #f5f5f5;
+    border: 1px solid var(--clr-border-dark);
+    padding: 8px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    border-radius: var(--radius);
+    text-align: center;
+  }
+  .upload-status.success {
+    border-color: #4caf50;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+  .upload-status.error {
+    border-color: #f44336;
+    background-color: #ffebee;
+    color: #c62828;
+  }
+  
+  .massUploadContainer {
+    margin-bottom: 12px;
+  }
+  
+  .collapsible-box {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid var(--clr-border-dark);
+    background-color: #f9f9f9;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: var(--radius);
+  }
+  
+  /* state variations retained for JS toggling */
+  .collapsible-box.success { border-color: #4caf50; }
+  .collapsible-box.error   { border-color: #f44336; }
+  
+  /* ------------------------------
+     7.  Responsive tweaks (popup resizes)
+     ------------------------------ */
+  @media (max-width: 520px) {
+    #popupContainer { width: 100vw; height: 100vh; }
+    .folderGrid { grid-template-columns: repeat(2, 1fr); }
+    .instructions { flex-direction: column; align-items: flex-start; }
+  }
+  

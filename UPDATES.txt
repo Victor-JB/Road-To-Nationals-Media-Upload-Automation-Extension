@@ -19,7 +19,10 @@ PENDING: Applied for OAuth Consent Screen verification for the Prod credentials
 
 Ver 1.3
 - Added recursive search for videos in a drive folder so videos can be structured in any way
+- YouTube IDs field persists in case of accidental extension closure
+- YouTube upload session also persists in case of accidental extension closure
 - Added box for playlist description
 - Added saving of youtube ids locally to then be able to auto-fill in road to nationals
 - Edits to upload Loading bar, more information 
+- Added video action queue so previous action doesn't get killed if the user clicks the button for the next upload
 - Added blob-based dynamic uploading, where videos are uploaded in chunks and is saved
