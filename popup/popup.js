@@ -244,27 +244,27 @@ function renderVideoList(videos, accessToken, folderName) {
   This is a simple drag-to-resize implementation.
 */
 
-divider.addEventListener("mousedown", (e) => {
-  e.preventDefault();
+
+let startY = 0;
+let startHeight = 0;
+
+divider.addEventListener('mousedown', (e) => {
   isDragging = true;
+  startY = e.clientY;
+  startHeight = foldersSection.offsetHeight;
+  document.body.style.userSelect = 'none'; // prevent text selection
 });
 
-document.addEventListener("mousemove", (e) => {
+document.addEventListener('mousemove', (e) => {
   if (!isDragging) return;
-
-  const containerTop = document.getElementById("resizablePanel").getBoundingClientRect().top;
-  const offset = e.clientY - containerTop;
-
-  const minHeight = 80;
-  const containerHeight = document.getElementById("resizablePanel").offsetHeight;
-
-  const foldersHeight = Math.max(minHeight, offset);
-  const videosHeight = Math.max(minHeight, containerHeight - foldersHeight - 6); // minus divider height
-
-  foldersSection.style.flexBasis = `${foldersHeight}px`;
-  videosSection.style.flexBasis = `${videosHeight}px`;
+  const dy = e.clientY - startY;
+  let newHeight = startHeight + dy;
+  newHeight = Math.max(60, Math.min(300, newHeight)); // clamp between 60–300 px
+  foldersSection.style.height = `${newHeight}px`;
+  foldersSection.style.flex = `0 0 ${newHeight}px`; // force fixed height
 });
 
-document.addEventListener("mouseup", () => {
+document.addEventListener('mouseup', () => {
   isDragging = false;
+  document.body.style.userSelect = '';
 });

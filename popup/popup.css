@@ -181,7 +181,6 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-
   }
 
   #divider {
@@ -206,7 +205,11 @@
     border-radius: 50%;
     transition: background 0.15s;
   }
-  #divider:hover .divider-grip span {
+  #divider:hover {
+    background-color: #aaa;
+    cursor: row-resize;
+  }
+  .divider-grip span {
     background-color: #555;
   }
   
@@ -221,6 +224,7 @@
     background-color: var(--clr-bg);
     position: relative;
   }
+
   
   .videoList {
     list-style: none;
