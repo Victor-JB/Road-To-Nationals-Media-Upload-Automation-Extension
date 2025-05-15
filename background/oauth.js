@@ -5,7 +5,10 @@
 export function chromeStorageGet(keys) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get(keys, (items) => {
-      if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+      if (chrome.runtime.lastError) {
+        console.error("chrome.storage.local.get error:", chrome.runtime.lastError);
+        return reject(chrome.runtime.lastError);
+      }
       resolve(items);
     });
   });

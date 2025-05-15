@@ -70,6 +70,30 @@
           <button id="copyButton" style="display: none;">Copy All</button>
           <div id="collapsibleBox" class="collapsible-box" style="display: none;"></div>
         </div>
+        
+        <!-- Persisted videos (collapsible success box) -->
+        <div id="persistedContainer" style="margin-bottom: 8px;">
+          <div id="persistedHeader"
+              class="upload-status success"
+              style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+            <span>Last uploaded videos</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <!-- toggle arrow -->
+              <button id="togglePersisted"
+                      style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">
+                &#9660;
+              </button>
+              <!-- clear “×” -->
+              <button id="clearPersisted"
+                      style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">
+                ×
+              </button>
+            </div>
+          </div>
+          <div id="persistedBody" class="collapsible-box" style="display: none; margin-top: 4px;">
+            <ul id="persistedList" style="margin: 0; padding: 0; list-style: none;"></ul>
+          </div>
+        </div>
 
         <ul id="videoList" class="videoList"></ul>
       </div>

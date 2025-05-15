@@ -1,5 +1,9 @@
 // popup.js
-import { getAccessToken } from "../background/oauth.js";
+import { 
+  getAccessToken, 
+  chromeStorageGet, 
+  chromeStorageRemove 
+} from "../background/oauth.js";
 import {
   listFoldersInDriveWithAutoReauth,
   listVideosInFolderWithAutoReauth,
@@ -8,6 +12,7 @@ import {
   uploadToYouTubeWithAutoReauth,
   massUploadAllVideosToPlaylist,
   saveVideoIdsToStorage,
+  getStoredVideoData,
 } from "../services/youtubeApi.js";
 import { showUploadStatus } from "../utils/utils.js";
 
@@ -25,8 +30,8 @@ const foldersSection = document.getElementById("foldersSection");
 const videosSection = document.getElementById("videosSection");
 
 // -------------------------------------------------------------------------- //
-document.addEventListener("DOMContentLoaded", () => {
-  
+document.addEventListener("DOMContentLoaded", async () => {
+
   const refreshFoldersBtn = document.getElementById("refreshFolders");
   const folderSearchInput = document.getElementById("folderSearch");
   const uploadAllBtn = document.getElementById("uploadAllButton");
@@ -56,6 +61,53 @@ document.addEventListener("DOMContentLoaded", () => {
     renderFolderList(filtered, null);
   });
 
+  const panel = document.getElementById('persistedVideos');
+  const list  = document.getElementById('persistedList');
+
+  const videoData = await getStoredVideoData();
+  console.log("popup.js: got videoData", videoData);
+
+  if (videoData.length) {
+    panel.style.display = 'block';
+    list.innerHTML = '';
+    videoData.forEach(({ title, id }) => {
+      const li = document.createElement('li');
+      li.textContent = `${title} — `;
+      const a = document.createElement('a');
+      a.href   = `https://youtu.be/${id}`;
+      a.target = '_blank';
+      a.textContent = id;
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+
+    document.getElementById('clearPersisted').addEventListener('click', async () => {
+      await chrome.storage.local.clear();
+      panel.style.display = 'none';
+    });
+  }
+
+  // collapse/expand logic
+  const header   = document.getElementById('persistedHeader');
+  const body     = document.getElementById('persistedBody');
+  const toggle   = document.getElementById('togglePersisted');
+  const clearer  = document.getElementById('clearPersisted');
+  const container = document.getElementById('persistedContainer');
+
+  header.addEventListener('click', () => {
+    console.log("click oggle");
+    const isOpen = body.style.display === 'block';
+    body.style.display = isOpen ? 'none' : 'block';
+    // flip arrow: ▼ -> ▲
+    toggle.innerHTML = isOpen ? '&#9660;' : '&#9650;';
+  });
+
+  // clear storage & hide panel
+  clearer.addEventListener('click', async (e) => {
+    e.stopPropagation();           // don’t toggle collapse
+    await chrome.storage.local.clear();
+    container.style.display = 'none';
+  });
 
   // == upload all videos button == //
   uploadAllBtn.addEventListener("click", async () => {

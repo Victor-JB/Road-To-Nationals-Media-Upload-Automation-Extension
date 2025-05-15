@@ -1,6 +1,6 @@
 // youtubeApi.js
 
-import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
+import { chromeStorageGet, chromeStorageSet } from "../background/oauth.js";
 import { withAutoReauth, buildDescription } from "../utils/utils.js";
 
 /**
@@ -14,7 +14,7 @@ export async function saveVideoIdsToStorage(videoData) {
   });
 
   return new Promise((resolve, reject) => {
-    chrome.storage.local.set(storageData, () => {
+    chromeStorageSet(storageData, () => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
       } else {
@@ -23,6 +23,29 @@ export async function saveVideoIdsToStorage(videoData) {
       }
     });
   });
+}
+
+/**
+ * Fetch all stored video-ID entries and return
+ * them as an array of { title, id } objects.
+ */
+export async function getStoredVideoData() {
+  console.log("getStoredVideoData: entering");
+  try {
+    // null means “get all keys”
+    const items = await chromeStorageGet(null);
+    console.log("getStoredVideoData: items fetched", items);
+    // items is { [title]: id, … }
+    const videoData = Object.entries(items).map(([title, id]) => ({
+      title,
+      id
+    }));
+    console.log("getStoredVideoData: parsed videoData", videoData);
+    return videoData;
+  } catch (err) {
+    console.error("getStoredVideoData: failed to fetch storage", err);
+    return [];  // swallow error and return empty array
+  }
 }
 
 //--------------------------------------------------------------------------- //
