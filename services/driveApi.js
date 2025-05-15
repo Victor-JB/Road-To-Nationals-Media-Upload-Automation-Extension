@@ -1,6 +1,6 @@
 // driveApi.js
 
-import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
+import { withAutoReauth } from "../utils/utils.js";
 
 // -------------------------------------------------------------------------- //
 /**
@@ -79,50 +79,5 @@ export async function listVideosInFolder(accessToken, folderId) {
   return allVideos;
 }
 
-
-// clean up the redundance here, make it so that any function can be modofuyed to be called with reauth
-// -------------------------------------------------------------------------- //
-/**
- * Wrapper that auto‑reauths if we get a 401 from listFoldersInDrive.
- */
-export async function listFoldersInDriveWithAutoReauth(token) {
-  try {
-    return await listFoldersInDrive(token);
-  } catch (error) {
-    if (error.status === 401) {
-      console.warn("Token invalid while listing folders. Re-authing...");
-
-      await chromeStorageRemove(["accessToken"]);
-
-      const newToken = await getAccessToken();
-      if (!newToken) {
-        throw new Error("Re-auth failed for listing folders.");
-      }
-      return await listFoldersInDrive(newToken);
-    }
-    throw error;
-  }
-}
-
-// -------------------------------------------------------------------------- //
-/**
- * Wrapper that auto‑reauths if we get a 401 from listVideosInFolder.
- */
-export async function listVideosInFolderWithAutoReauth(token, folderId) {
-  try {
-    return await listVideosInFolder(token, folderId);
-  } catch (error) {
-    if (error.status === 401) {
-      console.warn("Token invalid while listing videos. Re-authing...");
-
-      await chromeStorageRemove(["accessToken"]);
-      const newToken = await getAccessToken();
-
-      if (!newToken) {
-        throw new Error("Re-auth failed for listing videos.");
-      }
-      return await listVideosInFolder(newToken, folderId);
-    }
-    throw error;
-  }
-}
+export const listFoldersInDriveWithAutoReauth = withAutoReauth(listFoldersInDrive);
+export const listVideosInFolderWithAutoReauth = withAutoReauth(listVideosInFolder);

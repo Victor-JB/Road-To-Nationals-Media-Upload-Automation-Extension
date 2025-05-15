@@ -1,5 +1,36 @@
 // utils.js -- just auxiliary functions
 
+import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
+
+/**
+ * Wrap any async function whose first arg is `accessToken`,
+ * retrying once if it throws an error with `.status === 401`.
+ *
+ * @param {Function} fn – async (accessToken, ...args) ⇒ Promise<…>
+ * @returns {Function} same signature as fn, but with auto-reauth
+ */
+export function withAutoReauth(fn) {
+  return async function(accessToken, ...restArgs) {
+    try {
+      return await fn(accessToken, ...restArgs);
+    } catch (err) {
+      if (err.status === 401) {
+        console.warn(`${fn.name} got 401; re-authenticating…`);
+        // clear stale token & fetch a new one
+        await chromeStorageRemove(["accessToken"]);
+        const newToken = await getAccessToken();
+        if (!newToken) {
+          throw new Error(`Re-auth failed in wrapper for ${fn.name}`);
+        }
+        // retry original call with fresh token
+        return await fn(newToken, ...restArgs);
+      }
+      throw err;
+    }
+  };
+}
+
+// -------------------------------------------------------------------------- //
 /**
 * Utility functions for the GymACT Road2Nationals Uploader.
 * These functions are used to build the description for the uploaded videos
@@ -11,6 +42,7 @@ export function buildDescription(originalDescription) {
     return scoreLine;
   }
 
+// -------------------------------------------------------------------------- //
 /*
   * Functions for showing upload status and progress.
   * These are used in the uploadToYouTubeWithAutoReauth function.

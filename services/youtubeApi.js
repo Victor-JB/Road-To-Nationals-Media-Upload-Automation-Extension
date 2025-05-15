@@ -1,7 +1,7 @@
 // youtubeApi.js
 
 import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
-import { buildDescription } from "../utils/utils.js";
+import { withAutoReauth, buildDescription } from "../utils/utils.js";
 
 /**
  * Saves uploaded video IDs to chrome.storage.local.
@@ -99,41 +99,8 @@ export async function uploadToYouTube(driveFileId, title, desc, accessToken) {
   return youtubeData;
 }
 
-//--------------------------------------------------------------------------- //
-/**
- * Upload to YouTube, but if we see a 401, remove the token & reauth once.
- * IMPORTANT: we now return the final youtubeData so we know the new videoId
- */
-export async function uploadToYouTubeWithAutoReauth(driveFileId, title, desc, token) {
-  try {
-    return await uploadToYouTube(driveFileId, title, desc, token);
-  } catch (error) {
-    if (error.status === 401) {
-      console.warn("Token invalid during upload. Re-authing...");
-
-      await chromeStorageRemove(["accessToken"]);
-      const newToken = await getAccessToken();
-
-      if (!newToken) {
-        throw new Error("Re-auth failed.");
-      }
-      // Try again with a fresh token
-      return await uploadToYouTube(driveFileId, title, desc, newToken);
-    } else {
-      console.error("Upload failed:", error);
-      // Only attempt to log error details if error.response is defined
-      if (error.response) {
-        try {
-          const errorData = await error.response.json();
-          console.error("Error details:", errorData);
-        } catch (err) {
-          console.error("Failed to parse error response");
-        }
-      }
-      throw error;
-    }
-  }
-}
+export const uploadToYouTubeWithAutoReauth =
+  withAutoReauth(uploadToYouTube, /* tokenIndex= */ 3);
 
 /* ------------------------------------------------------------------
    --------------------- NEW PLAYLIST LOGIC -------------------------
