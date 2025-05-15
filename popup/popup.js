@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderFolderList(filtered, null);
   });
 
-  const panel = document.getElementById('persistedVideos');
+  const panel = document.getElementById('persistedContainer');
   const list  = document.getElementById('persistedList');
 
   const videoData = await getStoredVideoData();
