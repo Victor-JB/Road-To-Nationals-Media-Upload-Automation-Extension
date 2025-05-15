@@ -8,9 +8,14 @@ high priority:
 2.5 Also incliude a cancel button to cancel upload
 3. PARELLEL UPLOADS--upload multiple videos at once for mass upload
 4. better progress bar, with blobs so that video progress is tracked
-5. better ui, looks a little cleaner
 Upload all of these safeguardand performance enhancers before releasing next version to puboic
 
+1. HAVE THE FOLDERS PERSIST, NOT A BAJILLION API CALLS TO DO SO
+2. have a history tab where person can see previous history of their ids
+
+1. add field for meet name, to not have person re copy pasting the name
+2. add loading icon for refresh folders
+3. make sure the previous upload ids persists, x button
 
 
 1. drop down of team members who are added, so user doesn't have to reinput video name every time, can just 
@@ -18,7 +23,7 @@ put in initial template
 2. streamlining process further, reducing number of fields user needs to input, standardize and save preferences
 3. donate button "buy coffee" in extension and chrome web store
 4. consider making larger
-5
+
 Later:
 - CV to read score values off of score sheet
 
@@ -34,7 +39,7 @@ Later:
 3. better readme -- use nice template from the other guy
 4. Use jquery to automatically populate fields youtube ids for road 2 nationals whilst logged into the site!
 5. possibly ask road2nationals for api collaboration
-6. more robust error handling
+6. more robust error handling -- always 
 7. figure out distribution--getting it to more teams if it is useful
 8. figure out how it works on mobile--if it looks nice, works well, can be done quickly upon
 logging into the site, even from the meet
@@ -43,16 +48,8 @@ Critical:
 - zip new package and upload to web store for verification
 - add a link to the privacy policy in the extension
 - verification for google oauth consent screen
-- recursively go through all folders in a selected folder, find all the videos so
-the folder structure doesn't need to be a certain way
-- make fields to enter scores for all unique videos, is that the best way to do it?
-     - possibly find better way to have scores uploaded
-     - then make sure score gets put in description
-- also make a field for the video name as well, or 
+- also make a field for the video name as well
 - use jquery to populate youtube ID fields in road2nat automatically
-
-Non critical:
-- take all content from google doc privacy policy and put in html version
 
 MAKE A "HOW TO USE" doc for first time users, it redirects you to that site +
 have the url in the extension itself; explain how you need to name videos accordingly,
