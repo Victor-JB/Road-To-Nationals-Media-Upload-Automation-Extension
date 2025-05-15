@@ -141,6 +141,7 @@
   
   .folderItem {
     display: flex;
+    cursor: pointer;
     flex-direction: column;
     align-items: center;
     text-align: center;
@@ -150,6 +151,11 @@
     padding: 12px 8px;
     transition: transform 0.15s, box-shadow 0.2s;
   }
+
+  .folderItem.selected {
+    outline: 2px solid var(--clr-accent);
+  }
+
   .folderItem:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
@@ -184,6 +190,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    margin-top: 12px; /* Add vertical spacing */
   }
 
   #divider {

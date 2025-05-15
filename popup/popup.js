@@ -144,6 +144,24 @@ function renderFolderList(folders, token) {
   folders.forEach((folder) => {
     const li = document.createElement("li");
     li.className = "folderItem";
+    
+
+    // adding click handler for entire folder box
+    li.addEventListener('click', async () => {
+      li.classList.add('selected');
+      let finalToken = token;
+      if (!finalToken) {
+        finalToken = await getAccessToken();
+        if (!finalToken) return;
+      }
+      try {
+        const videos = await listVideosInFolderWithAutoReauth(finalToken, folder.id);
+        renderVideoList(videos, finalToken, folder.name);
+      } catch (error) {
+        console.error("Error listing videos:", error);
+      }
+      li.classList.remove('selected');
+    });
 
     // Folder icon
     const icon = document.createElement("img");
@@ -158,7 +176,9 @@ function renderFolderList(folders, token) {
     // "Show Videos" button
     const showBtn = document.createElement("button");
     showBtn.textContent = "Show Videos";
-    showBtn.addEventListener("click", async () => {
+    showBtn.addEventListener("click", async (e) => {
+      e.stopPropagation(); // prevent bubbling to parent
+      li.classList.add('selected');
       let finalToken = token;
       if (!finalToken) {
         finalToken = await getAccessToken();
@@ -170,6 +190,7 @@ function renderFolderList(folders, token) {
       } catch (error) {
         console.error("Error listing videos:", error);
       }
+      li.classList.remove('selected');
     });
 
     li.appendChild(showBtn);
@@ -243,7 +264,6 @@ function renderVideoList(videos, accessToken, folderName) {
   Logic for resizing the folder and video sections
   This is a simple drag-to-resize implementation.
 */
-
 
 let startY = 0;
 let startHeight = 0;
