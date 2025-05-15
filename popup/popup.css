@@ -67,7 +67,7 @@
   #popupContainer {
     width: 600px;
     min-width: 600px;
-    height: 400px;
+    height: 550px;
     display: flex;
     flex-direction: column;
     padding: 8px;
@@ -84,7 +84,7 @@
   header {
     display: flex;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 15px;
   }
   
   .headerLogo {
@@ -121,13 +121,15 @@
      3.  Folder section
      ------------------------------ */
   .foldersContainer {
+    height: var(--folders-height, 180px);
     overflow-y: auto;
+    flex-shrink: 0;
     margin-bottom: 8px;
     padding: 8px 0;
     flex: 0 0 auto;          /* NEW: let JS‑set height win over flex */
     min-height: 60px;  
   }
-  
+
   .folderGrid {
     list-style: none;
     padding: 0 4px;
@@ -178,18 +180,21 @@
     ------------------------------ */
 
   #resizablePanel {
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    flex: 1;
+    overflow: hidden;
   }
 
   #divider {
+    width: 100%; /* Force it to fill horizontally */
     height: 6px;
     background-color: var(--clr-border-dark);
     cursor: row-resize;
     position: relative;
+    flex-shrink: 0; /* Prevent it from being squeezed */
   }
-  
+
   .divider-grip {
     position: absolute;
     top: 50%;
@@ -217,14 +222,13 @@
      5.  Videos section
      ------------------------------ */
   .videosContainer {
-    flex: 0 0 auto;          /* NEW: let JS‑set height win over flex */
+    flex: 1 1 auto;          /* NEW: let JS‑set height win over flex */
     min-height: 60px;  
     overflow-y: auto;
     padding: 8px 0;
     background-color: var(--clr-bg);
     position: relative;
   }
-
   
   .videoList {
     list-style: none;
