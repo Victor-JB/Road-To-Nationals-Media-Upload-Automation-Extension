@@ -12,7 +12,7 @@ import {
   uploadToYouTubeWithAutoReauth,
   massUploadAllVideosToPlaylist,
   saveVideoIdsToStorage,
-  getStoredVideoData,
+  getStoredVideoIDs,
 } from "../services/youtubeApi.js";
 import { showUploadStatus } from "../utils/utils.js";
 
@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const panel = document.getElementById('persistedContainer');
   const list  = document.getElementById('persistedList');
 
-  const videoData = await getStoredVideoData();
+  const videoData = await getStoredVideoIDs();
   console.log("popup.js: got videoData", videoData);
 
   if (videoData.length) {

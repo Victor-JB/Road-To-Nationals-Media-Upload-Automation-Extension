@@ -50,8 +50,10 @@ export function buildDescription(originalDescription) {
 export function showUploadStatus(message, mode = "neutral", videoData = [], stepMessage = "") {
     const container = document.getElementById("uploadStatus");
     const msg = document.getElementById("uploadMessage");
+    const autofillButton = document.getElementById("autofillButton");
     const progress = document.getElementById("uploadProgress");
     const collapsibleBox = document.getElementById("collapsibleBox");
+    
     const copyButton = document.getElementById("copyButton");
   
     msg.textContent = `${message} ${stepMessage}`;
@@ -77,8 +79,15 @@ export function showUploadStatus(message, mode = "neutral", videoData = [], step
           alert("Copied to clipboard!");
         });
       };
+
+      // show & wire up our new Autofill button
+      autofillButton.style.display = "inline-block";
+      autofillButton.onclick = () => {
+        autofillOnSite();
+      };
     } else {
       collapsibleBox.style.display = "none";
       copyButton.style.display = "none";
+      autofillButton.style.display = "none";
     }
   }
