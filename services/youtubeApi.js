@@ -1,51 +1,29 @@
 // youtubeApi.js
 
 import { chromeStorageGet, chromeStorageSet } from "../background/oauth.js";
-import { withAutoReauth, buildDescription } from "../utils/utils.js";
+import { showUploadStatus, withAutoReauth, buildDescription } from "../utils/utils.js";
 
+const MUPLOAD_STEPS = 3;
 /**
  * Saves uploaded video IDs to chrome.storage.local.
  * The key is the video title, and the value is the video ID.
 */
 export async function saveVideoIdsToStorage(videoData) {
-  const storageData = {};
-  videoData.forEach(({ title, id }) => {
-    storageData[title] = id;
-  });
-
   return new Promise((resolve, reject) => {
-    chromeStorageSet(storageData, () => {
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError);
-      } else {
-        console.log("Video IDs saved to storage:", storageData);
-        resolve();
-      }
+    chrome.storage.local.set({ videoData }, () => {
+      if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+      console.log("Video data saved:", videoData);
+      resolve();
     });
   });
 }
-
 /**
  * Fetch all stored video-ID entries and return
  * them as an array of { title, id } objects.
  */
-export async function getStoredVideoData() {
-  console.log("getStoredVideoData: entering");
-  try {
-    // null means “get all keys”
-    const items = await chromeStorageGet(null);
-    console.log("getStoredVideoData: items fetched", items);
-    // items is { [title]: id, … }
-    const videoData = Object.entries(items).map(([title, id]) => ({
-      title,
-      id
-    }));
-    console.log("getStoredVideoData: parsed videoData", videoData);
-    return videoData;
-  } catch (err) {
-    console.error("getStoredVideoData: failed to fetch storage", err);
-    return [];  // swallow error and return empty array
-  }
+export async function getStoredVideoIDs() {
+  const { videoData = [] } = await chromeStorageGet("videoData");
+  return videoData;
 }
 
 //--------------------------------------------------------------------------- //
@@ -222,51 +200,55 @@ export async function massUploadAllVideosToPlaylist(
   playlistName, 
   playlistDescription, 
   accessToken, 
-  updateStepCallback
 ) {
+  const uploadedVideos = [];
+  let stepMessage = "";
+  const totalVideos = videosScoreMap.length;
+  const TSTEPS = MUPLOAD_STEPS + totalVideos;
+
+  // Show initial status
+  showUploadStatus("Uploading all videos to playlist...", TSTEPS, 1, "progress", [], "Step 1: Creating playlist...");
+
   // 1) Create a new playlist
-  updateStepCallback("Step 1: Creating playlist...");
   const playlist = await createPlaylist(accessToken, playlistName, playlistDescription);
   const playlistId = playlist.id;
 
-  const uploadedVideos = [];
-  const totalVideos = videosScoreMap.length;
-
+  showUploadStatus("Uploading all videos to playlist...", TSTEPS, 2, "progress", [], "Step 2: Uploading videos...");
   // 2) Loop through each video => upload => add to playlist
   for (let i = 0; i < totalVideos; i++) {
     const file = videosScoreMap[i][0];
     const score_desc = videosScoreMap[i][1];
 
-    const overallProgress = Math.round(((i + 1) / totalVideos) * 100);
-
-    updateStepCallback(`Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${file.name})...`);
+    stepMessage = `Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${file.name})...`;
+    showUploadStatus("Uploading all videos to playlist...", TSTEPS, 3 + i, "progress", [], stepMessage);
 
     const uploadedVideo = await uploadToYouTubeWithAutoReauth(
       file.id,
       file.name,
       score_desc,
       accessToken,
-      (progress) => {
-        updateStepCallback(
-          `Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${file.name})... (${progress}%)`
-        );
-      }
     );
 
-    updateStepCallback(`Step 3.${i + 1}: Adding video ${i + 1} to playlist (${file.name})...`);
+    stepMessage = `Step 2.${i + 2}: Adding video ${i + 1} of ${totalVideos} (${file.name}) to playlist...`;
+    showUploadStatus("Uploading all videos to playlist...", TSTEPS, 3 + i, "progress", [], stepMessage);
     await addVideoToPlaylist(accessToken, playlistId, uploadedVideo.id);
 
     // Save the uploaded video's title and ID
     uploadedVideos.push({ title: file.name, id: uploadedVideo.id });
 
-    // Update overall progress
-    updateStepCallback(`Step 4: Overall progress: ${overallProgress}%`);
   }
 
   // 3) Save all uploaded video IDs to storage
-  updateStepCallback("Step 5: Saving video IDs to storage...");
+  showUploadStatus("Saving video IDs to storage...", TSTEPS, TSTEPS-1, "progress", []);
   
   await saveVideoIdsToStorage(uploadedVideos);
 
-  return uploadedVideos; // Return the uploaded videos for further use
+  // Show success message with all uploaded video data
+  showUploadStatus(
+    "All videos uploaded and added to the playlist!",
+    TSTEPS,
+    TSTEPS,
+    "success",
+    uploadedVideos
+  );
 }

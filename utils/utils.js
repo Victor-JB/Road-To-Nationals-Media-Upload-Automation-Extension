@@ -47,18 +47,24 @@ export function buildDescription(originalDescription) {
   * Functions for showing upload status and progress.
   * These are used in the uploadToYouTubeWithAutoReauth function.
 */
-export function showUploadStatus(message, mode = "neutral", videoData = [], stepMessage = "") {
+export function showUploadStatus(message, totalSteps, stepIdx, mode = "neutral", videoData = [], stepMessage = "") {
     const container = document.getElementById("uploadStatus");
     const msg = document.getElementById("uploadMessage");
     const autofillButton = document.getElementById("autofillButton");
-    const progress = document.getElementById("uploadProgress");
+    const bar = document.getElementById("uploadProgress");
     const collapsibleBox = document.getElementById("collapsibleBox");
     
     const copyButton = document.getElementById("copyButton");
   
     msg.textContent = `${message} ${stepMessage}`;
+
+    if (typeof totalSteps === 'number') {
+      bar.max        = totalSteps;
+      bar.value      = stepIdx;     // 0-based so “finished” is === max
+      bar.style.display = 'block';
+    }
+
     container.style.display = "block";
-    progress.style.display = mode === "progress" ? "block" : "none";
   
     container.classList.remove("success", "error");
     if (mode === "success") container.classList.add("success");
@@ -90,4 +96,5 @@ export function showUploadStatus(message, mode = "neutral", videoData = [], step
       copyButton.style.display = "none";
       autofillButton.style.display = "none";
     }
+
   }

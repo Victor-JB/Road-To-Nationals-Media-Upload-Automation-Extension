@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const refreshFoldersBtn = document.getElementById("refreshFolders");
   const folderSearchInput = document.getElementById("folderSearch");
   const uploadAllBtn = document.getElementById("uploadAllButton");
+  const container = document.getElementById('persistedContainer');
 
   // == refresh folders button == //
   refreshFoldersBtn.addEventListener("click", async () => {
@@ -61,53 +62,55 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderFolderList(filtered, null);
   });
 
-  const panel = document.getElementById('persistedContainer');
-  const list  = document.getElementById('persistedList');
-
   const videoData = await getStoredVideoIDs();
-  console.log("popup.js: got videoData", videoData);
+  if (videoData.length > 0) {
 
-  if (videoData.length) {
-    panel.style.display = 'block';
-    list.innerHTML = '';
-    videoData.forEach(({ title, id }) => {
-      const li = document.createElement('li');
-      li.textContent = `${title} — `;
-      const a = document.createElement('a');
-      a.href   = `https://youtu.be/${id}`;
-      a.target = '_blank';
-      a.textContent = id;
-      li.appendChild(a);
-      list.appendChild(li);
+    // collapse/expand logic
+    const header   = document.getElementById('persistedHeader');
+    const body     = document.getElementById('persistedBody');
+    const toggle   = document.getElementById('togglePersisted');
+    const clearer  = document.getElementById('clearPersisted');
+    const list  = document.getElementById('persistedList');
+
+    console.log("popup.js: got videoData", videoData);
+
+    if (videoData.length) {
+      container.style.display = 'block';
+      list.innerHTML = '';
+      videoData.forEach(({ title, id }) => {
+        const li = document.createElement('li');
+        li.textContent = `${title} — `;
+        const a = document.createElement('a');
+        a.href   = `https://youtu.be/${id}`;
+        a.target = '_blank';
+        a.textContent = id;
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+
+
+    }
+
+    header.addEventListener('click', () => {
+      // console.log("toggled persisted container");
+      const isOpen = body.style.display === 'block';
+      body.style.display = isOpen ? 'none' : 'block';
+      // flip arrow: ▼ -> ▲
+      toggle.innerHTML = isOpen ? '&#9660;' : '&#9650;';
     });
 
-    document.getElementById('clearPersisted').addEventListener('click', async () => {
-      await chrome.storage.local.clear();
-      panel.style.display = 'none';
+    // clear storage & hide container
+    clearer.addEventListener('click', async (e) => {
+      e.stopPropagation();           // don’t toggle collapse
+      await chromeStorageRemove(['videoData']);
+      console.log("popup.js: cleared videoData");
+      container.style.display = 'none';
     });
   }
-
-  // collapse/expand logic
-  const header   = document.getElementById('persistedHeader');
-  const body     = document.getElementById('persistedBody');
-  const toggle   = document.getElementById('togglePersisted');
-  const clearer  = document.getElementById('clearPersisted');
-  const container = document.getElementById('persistedContainer');
-
-  header.addEventListener('click', () => {
-    console.log("click oggle");
-    const isOpen = body.style.display === 'block';
-    body.style.display = isOpen ? 'none' : 'block';
-    // flip arrow: ▼ -> ▲
-    toggle.innerHTML = isOpen ? '&#9660;' : '&#9650;';
-  });
-
-  // clear storage & hide panel
-  clearer.addEventListener('click', async (e) => {
-    e.stopPropagation();           // don’t toggle collapse
-    await chrome.storage.local.clear();
+  else {
     container.style.display = 'none';
-  });
+  }
+  
 
   // == upload all videos button == //
   uploadAllBtn.addEventListener("click", async () => {
@@ -142,25 +145,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
   
-      // Show initial status
-      showUploadStatus("Uploading all videos to playlist...", "progress", [], "Step 1: Initializing...");
   
       // Call the mass upload function with a step update callback
-      const uploadedVideos = await massUploadAllVideosToPlaylist(
+      await massUploadAllVideosToPlaylist(
         videoScoreMap,
         playlistName,
         playlistDescription,
-        token,
-        (stepMessage) => {
-          showUploadStatus("Uploading all videos to playlist...", "progress", [], stepMessage);
-        }
-      );
-  
-      // Show success message with all uploaded video data
-      showUploadStatus(
-        "All videos uploaded and added to the playlist!",
-        "success",
-        uploadedVideos
+        token
       );
       
     } catch (err) {
@@ -289,17 +280,17 @@ function renderVideoList(videos, accessToken, folderName) {
     uploadBtn.addEventListener("click", async () => {
       try {
         const score = scoreInput.value.trim();
-        showUploadStatus(`Uploading ${file.name}...`, "progress", [], "Step 1: Initiating upload session");
+        showUploadStatus(`Uploading ${file.name}...`, 3, 1, "progress", [], "Step 1: Initiating upload session");
         
         const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, score, accessToken);
     
-        showUploadStatus(`Uploading ${file.name}...`, "progress", [], "Step 2: Saving video ID to storage");
+        showUploadStatus(`Uploading ${file.name}...`, 3, 2, "progress", [], "Step 2: Saving video ID to storage");
     
         // Save the uploaded video ID to storage
         const videoData = [{ title: file.name, id: uploadedVideo.id }];
         await saveVideoIdsToStorage(videoData);
         
-        showUploadStatus(`Successfully uploaded ${file.name}!`, "success", videoData);
+        showUploadStatus(`Successfully uploaded ${file.name}!`, 3, 3, "success", videoData);
     
       } catch (err) {
         console.error("Upload failed:", err);

@@ -26,3 +26,6 @@ Ver 1.3
 - Edits to upload Loading bar, more information 
 - Added video action queue so previous action doesn't get killed if the user clicks the button for the next upload
 - Added blob-based dynamic uploading, where videos are uploaded in chunks and is saved
+- Using playlist name as competition name to be used in video titles
+- Fixed progress bar not actually displaying correct length of upload
+- Added cancel button to cancel upload
