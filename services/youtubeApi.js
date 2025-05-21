@@ -4,6 +4,7 @@ import { chromeStorageGet, chromeStorageRemove } from "../background/oauth.js";
 import { showUploadStatus, withAutoReauth, buildDescription } from "../utils/utils.js";
 
 const MUPLOAD_STEPS = 3;
+
 /**
  * Saves uploaded video IDs to chrome.storage.local.
  * The key is the video title, and the value is the video ID.
@@ -103,9 +104,7 @@ export async function uploadToYouTube(driveFileId, title, desc, accessToken) {
 export const uploadToYouTubeWithAutoReauth =
   withAutoReauth(uploadToYouTube, /* tokenIndex= */ 3);
 
-/* ------------------------------------------------------------------
-   --------------------- NEW PLAYLIST LOGIC -------------------------
-   ----------------------------------------------------------------- */
+//--------------------------------------------------------------------------- //
 /**
  * Creates a new YouTube playlist with the given name.
  * Requires a token with playlist write permission (often "youtube" or "youtube.force-ssl" scope).
@@ -235,7 +234,6 @@ export async function massUploadAllVideosToPlaylist(
 
     // Save the uploaded video's title and ID
     uploadedVideos.push({ title: file.name, id: uploadedVideo.id });
-
   }
 
   // 3) Save all uploaded video IDs to storage

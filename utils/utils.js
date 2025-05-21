@@ -1,6 +1,7 @@
 // utils.js -- just auxiliary functions
 
 import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
+import { autofillOnSite } from "../services/autofill.js";
 
 /**
  * Wrap any async function whose first arg is `accessToken`,
@@ -53,7 +54,6 @@ export function showUploadStatus(message, totalSteps, stepIdx, mode = "neutral",
     const autofillButton = document.getElementById("autofillButton");
     const bar = document.getElementById("uploadProgress");
     const collapsibleBox = document.getElementById("collapsibleBox");
-    
     const copyButton = document.getElementById("copyButton");
   
     msg.textContent = `${message} ${stepMessage}`;

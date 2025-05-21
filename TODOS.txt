@@ -15,7 +15,6 @@ Upload all of these safeguardand performance enhancers before releasing next ver
 
 1. add field for meet name, to not have person re copy pasting the name
 2. add loading icon for refresh folders
-3. make sure the previous upload ids persists, x button
 
 
 1. drop down of team members who are added, so user doesn't have to reinput video name every time, can just 

@@ -10,6 +10,7 @@ import {
   saveVideoIdsToStorage,
   getStoredVideoIDs,
 } from "../services/youtubeApi.js";
+import { autofillOnSite } from "../services/autofill.js";
 import { showUploadStatus } from "../utils/utils.js";
 
 // We'll store the fetched folders in this array for searching
@@ -68,6 +69,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const toggle   = document.getElementById('togglePersisted');
     const clearer  = document.getElementById('clearPersisted');
     const list  = document.getElementById('persistedList');
+    const autofillButton = document.getElementById('autofillButton-prevIds');
 
     if (videoData.length) {
       container.style.display = 'block';
@@ -83,6 +85,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         list.appendChild(li);
       });
     }
+
+    autofillButton.style.display = "inline-block";
+    autofillButton.onclick = () => {
+      autofillOnSite();
+    };
 
     header.addEventListener('click', () => {
       // console.log("toggled persisted container");

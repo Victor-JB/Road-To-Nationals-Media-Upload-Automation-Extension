@@ -68,7 +68,7 @@
           <progress id="uploadProgress" value="0" style="width: 100%; display: none;"></progress>
           <button id="copyButton" style="display: none;">Copy All</button>
           <!-- Autofill button to push IDs into the athlete‐entry page -->
-          <button id="autofillButton" style="display: none; margin-left:8px;">
+          <button id="autofillButton" class="autofill-btn" style="display: none; margin-left:8px;">
             Autofill YouTube IDs
           </button>
           <div id="collapsibleBox" class="collapsible-box" style="display: none;"></div>
@@ -81,6 +81,10 @@
               style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
             <span>Last uploaded videos</span>
             <div style="display: flex; gap: 8px; align-items: center;">
+              <!-- Autofill button to push IDs into the athlete‐entry page -->
+              <button id="autofillButton-prevIds" class="autofill-btn" style="display: none; margin-left:8px;">
+                Autofill YouTube IDs
+              </button>
               <!-- toggle arrow -->
               <button id="togglePersisted"
                       style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">

@@ -1,4 +1,9 @@
+// autofill.js -- just logic to handle autofilling of the IDs
+
+import { getStoredVideoIDs } from "./youtubeApi.js";
+
 export async function autofillOnSite() {
+
   // 1) get active tab
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const url    = new URL(tab.url);
@@ -8,36 +13,52 @@ export async function autofillOnSite() {
     alert("Please navigate to the Road2Nationals Meet Videos entry page first.");
     return;
   }
+  
+  // 1) get uploaded video meta
+  const uploadedVideos = await getStoredVideoIDs();
+  if (!uploadedVideos.length) {
+    alert('No uploaded videos cached for autofill.');
+    return;
+  }
 
-  // 3) fetch all stored IDs
-  chrome.storage.local.get(null, items => {
-    // 4) inject into page
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (storedItems) => {
-        for (const [title, id] of Object.entries(storedItems)) {
-          const [namePart, eventOrScore = ""] = title.split(" - ");
-          const normalized = namePart.trim().toLowerCase();
+  // 2) build lookup
+  const EVENT_MAP = { floor:['floor','fx'], phorse:['phorse','pommel','ph'], rings:['rings','sr'],
+                      vault:['vault','vt'], pbars:['pbars','parallel','pb'], hbar:['hbar','high','hb'] };
+  const lookup = {};
 
-          document.querySelectorAll("tr").forEach(row => {
-            const cells = row.querySelectorAll("td");
-            if (cells.length < 4) return;
+  for (const { title, id } of uploadedVideos) {
+    const tokens = title.toLowerCase().split(/[^a-z]+/);
+    const event  = Object.keys(EVENT_MAP)
+                          .find(ev => tokens.some(t => EVENT_MAP[ev].includes(t)));
+    if (!event) continue;
 
-            const first = cells[0].innerText.trim().toLowerCase();
-            const last  = cells[1].innerText.trim().toLowerCase();
-            if (`${first} ${last}` !== normalized) return;
+    // assume last token before event aliases is the last name
+    const idx = tokens.findIndex(t => EVENT_MAP[event].includes(t));
+    const first = tokens[idx - 2] ?? '';   // very heuristic, but works for "Joseph Conley Floor"
+    const last  = tokens[idx - 1] ?? '';
+    lookup[`${event}:${last}`] = { id, first, last };
+  }
 
-            // if multiple matches, check that the score cell text appears in eventOrScore
-            const scoreText = cells[2].innerText.trim();
-            if (eventOrScore && !eventOrScore.includes(scoreText)) return;
-
-            // found it → fill input in cell 3
-            const input = cells[3].querySelector("input");
-            if (input) input.value = id;
-          });
-        }
-      },
-      args: [items]
-    });
+  // 3) inject a content script in the active tab
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [lookup],
+    func: (lookup) => {
+      const filled = [];
+      document.querySelectorAll('table').forEach(tbl => {
+        const eventKey = tbl.previousElementSibling.textContent.trim().toLowerCase();
+        tbl.querySelectorAll('tr').forEach(row => {
+          const last = row.children[1].textContent.trim().toLowerCase();
+          const key  = `${eventKey}:${last}`;
+          if (lookup[key]) {
+            row.querySelector('input[type="text"][name*="youtube"]').value = lookup[key].id;
+            filled.push(key);
+          }
+        });
+      });
+      return filled.length;
+    }
+  }, ([{ result: count }]) => {
+      alert(`Autofill complete - ${count} rows updated.`);
   });
 }
