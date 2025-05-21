@@ -266,8 +266,13 @@
   
   /* score input */
   .scoreInput {
-    width: 100px;
+    width: 115px;
     padding: 4px;
+  }
+
+  .nameEventInput {
+    flex: 1 1 180px;
+    max-width: 220px;
   }
   
   /* ------------------------------

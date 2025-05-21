@@ -1,6 +1,6 @@
 // youtubeApi.js
 
-import { chromeStorageGet, chromeStorageRemove } from "../background/oauth.js";
+import { chromeStorageGet, chromeStorageRemove, chromeStorageSet } from "../background/oauth.js";
 import { showUploadStatus, withAutoReauth, buildDescription } from "../utils/utils.js";
 
 const MUPLOAD_STEPS = 3;
@@ -10,13 +10,13 @@ const MUPLOAD_STEPS = 3;
  * The key is the video title, and the value is the video ID.
 */
 export async function saveVideoIdsToStorage(videoData) {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.set({ videoData }, () => {
-      if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+  chromeStorageSet({ videoData })
+    .then(() => {
       console.log("Video data saved:", videoData);
-      resolve();
+    })
+    .catch((error) => {
+      console.error("Error saving video data:", error);
     });
-  });
 }
 /**
  * Fetch all stored video-ID entries and return
@@ -217,13 +217,14 @@ export async function massUploadAllVideosToPlaylist(
   for (let i = 0; i < totalVideos; i++) {
     const file = videosScoreMap[i][0];
     const score_desc = videosScoreMap[i][1];
+    const title = videosScoreMap[i][2];
 
-    stepMessage = `Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${file.name})...`;
+    stepMessage = `Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${title})...`;
     showUploadStatus("Uploading all videos to playlist...", TSTEPS, 3 + i, "progress", [], stepMessage);
 
     const uploadedVideo = await uploadToYouTubeWithAutoReauth(
       file.id,
-      file.name,
+      title,
       score_desc,
       accessToken,
     );

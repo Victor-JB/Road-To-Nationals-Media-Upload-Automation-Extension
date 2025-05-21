@@ -117,6 +117,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const playlistName = document.getElementById("playlistNameInput").value.trim();
       const playlistDescription  = document.getElementById("playlistDescriptionInput").value.trim(); 
       const videoItems = document.querySelectorAll(".videoItem");
+      
       const videoScoreMap = [];
 
       if (!playlistName) {
@@ -130,11 +131,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       videoItems.forEach((videoItem, index) => {
         const scoreInput = videoItem.querySelector(".scoreInput");
+        const nameEventInput = videoItem.querySelector(".nameEventInput");
+
         const score = scoreInput ? scoreInput.value.trim() : "";
+        const nameString = nameEventInput?.value.trim() ?? ''
 
         const file = currentVideos[index]; // Assuming the order is maintained
+        const base = nameString || file.name;
+        const title = athleteString && playlistName
+                        ? `${base} ${playlistName}`  // override + playlist
+                        : base;
+
         if (file && file.id) {
-          videoScoreMap[index] = [file, score];
+          videoScoreMap[index] = [file, score, title];
         }
       });
   
@@ -263,8 +272,16 @@ function renderVideoList(videos, accessToken, folderName) {
 
     const li = document.createElement("li");
     li.className = "videoItem";
-    li.textContent = `${file.name} (${file.mimeType}) `;
+    li.textContent = `${file.name} (${file.mimeType})`;
 
+    // creating name + event input
+    const nameEvt = document.createElement('input');
+    nameEvt.type        = 'text';
+    nameEvt.placeholder = 'Athlete & event (optional)…';
+    nameEvt.className   = 'nameEventInput';
+    li.appendChild(nameEvt);
+
+    // creating score input
     const scoreInput = document.createElement("input");
     scoreInput.type = "text";
     scoreInput.placeholder = "Score (optional)";
@@ -274,25 +291,36 @@ function renderVideoList(videos, accessToken, folderName) {
     // Existing single upload
     const uploadBtn = document.createElement("button");
     uploadBtn.textContent = "Upload to YouTube";
+
+    const playlistElmt = document.getElementById("playlistNameInput");
     
     uploadBtn.addEventListener("click", async () => {
       try {
+        const playlistName = playlistElmt.value.trim();
         const score = scoreInput.value.trim();
-        showUploadStatus(`Uploading ${file.name}...`, 3, 1, "progress", [], "Step 1: Initiating upload session");
+        const athleteString = nameEvt.value.trim();
+        const base = athleteString || file.name;
+        const title = athleteString && playlistName
+                        ? `${base} ${playlistName}`  // override + playlist
+                        : base;
+
+        showUploadStatus(`Uploading ${title}...`, 3, 1, "progress", [], "Step 1: Initiating upload session");
         
-        const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, file.name, score, accessToken);
+        console.log("Uploading video:", file.name, "with title:", title);
+
+        const uploadedVideo = await uploadToYouTubeWithAutoReauth(file.id, title, score, accessToken);
     
-        showUploadStatus(`Uploading ${file.name}...`, 3, 2, "progress", [], "Step 2: Saving video ID to storage");
+        showUploadStatus(`Uploading ${title}...`, 3, 2, "progress", [], "Step 2: Saving video ID to storage");
     
         // Save the uploaded video ID to storage
-        const videoData = [{ title: file.name, id: uploadedVideo.id }];
+        const videoData = [{ title: title, id: uploadedVideo.id }];
         await saveVideoIdsToStorage(videoData);
         
-        showUploadStatus(`Successfully uploaded ${file.name}!`, 3, 3, "success", videoData);
+        showUploadStatus(`Successfully uploaded ${title}!`, 3, 3, "success", videoData);
     
       } catch (err) {
         console.error("Upload failed:", err);
-        showUploadStatus(`Failed to upload ${file.name}`, "error");
+        showUploadStatus(`Failed to upload ${title}`, "error");
       }
     });
     li.appendChild(uploadBtn);

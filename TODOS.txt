@@ -1,6 +1,15 @@
 - change Workflow & Planning tag, that is not the extension...
 
-feature ideas:
+
+High:
+1. add easy athlete name / event / meet name inpout, not even have to rename videos
+1. HAVE THE FOLDERS PERSIST, NOT A BAJILLION API CALLS TO DO SO
+3. create example usage, so people know how it works
+ - specifically for how the naming works, and how manahgers can either rename the videos or use the builtin forms to rename the videos
+  - also explain how the matching works for the autofill
+4. donation set up -- can donate
+5. CREATE ONBOARDING PAGE THAT IS OPENED UPON INSTALL? Can do donation + demo of how it works
+
 
 high priority:
 1. implement queue for upload clicking; as in, the current upload doesn't get killed if person clicks button for next upload
@@ -10,8 +19,7 @@ high priority:
 4. better progress bar, with blobs so that video progress is tracked
 Upload all of these safeguardand performance enhancers before releasing next version to puboic
 
-1. HAVE THE FOLDERS PERSIST, NOT A BAJILLION API CALLS TO DO SO
-2. have a history tab where person can see previous history of their ids
+
 
 1. add field for meet name, to not have person re copy pasting the name
 2. add loading icon for refresh folders
