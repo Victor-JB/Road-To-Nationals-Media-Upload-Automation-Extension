@@ -87,10 +87,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     autofillButton.style.display = "inline-block";
-    autofillButton.onclick = () => {
+    autofillButton.addEventListener('click', async (e) => {
+      e.stopPropagation();           // don’t toggle collapse
       autofillOnSite();
-    };
-
+    });
+    
     header.addEventListener('click', () => {
       // console.log("toggled persisted container");
       const isOpen = body.style.display === 'block';

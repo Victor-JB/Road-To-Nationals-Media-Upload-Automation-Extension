@@ -17,7 +17,7 @@ Ver 1.2.5
 
 PENDING: Applied for OAuth Consent Screen verification for the Prod credentials
 
-Ver 1.3
+Ver 2.0
 - Added recursive search for videos in a drive folder so videos can be structured in any way
 - YouTube IDs field persists in case of accidental extension closure
 - YouTube upload session also persists in case of accidental extension closure
@@ -29,3 +29,4 @@ Ver 1.3
 - Using playlist name as competition name to be used in video titles
 - Fixed progress bar not actually displaying correct length of upload
 - Added cancel button to cancel upload
+- Added 'activeTab' permission to manifest to be able to identify current tab url

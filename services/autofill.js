@@ -2,63 +2,119 @@
 
 import { getStoredVideoIDs } from "./youtubeApi.js";
 
+const EVENT_ALIAS = {
+  floor:  ['floor', 'fx'],
+  phorse: ['phorse', 'pommel', 'ph'],
+  rings:  ['rings', 'sr'],
+  vault:  ['vault', 'vt'],
+  pbars:  ['pbars', 'parallel', 'pb'],
+  hbar:   ['hbar',  'high', 'hb']
+};
+
+
+//--------------------------------------------------------------------------- //
+/** Build { "event:last": {id, first, last} } for quick lookup */
+async function buildLookup() {
+  const uploadedVideos = await getStoredVideoIDs();
+  const map = {};
+
+  uploadedVideos.forEach(({ title, id }) => {
+    const low = title.toLowerCase();
+    const tokens = low.split(/[^a-z]+/);
+
+    // find event alias in title
+    const event = Object.keys(EVENT_ALIAS)
+      .find(ev => tokens.some(t => EVENT_ALIAS[ev].includes(t)));
+    if (!event) return;
+
+    // crude: assume last two tokens before alias are first/last
+    const idx = tokens.findIndex(t => EVENT_ALIAS[event].includes(t));
+    const first = tokens[idx - 2] ?? '';
+    const last  = tokens[idx - 1] ?? '';
+    if (!last) return;
+
+    map[`${event}:${last}`] = { id, first, last };
+  });
+
+  return map;
+}
+
+//--------------------------------------------------------------------------- //
+/** Content-script body – runs inside Road2Nationals tab */
+function fillTable(lookup) {
+  // EV_FROM_CODE defined here so also injected in site context
+  const EV_FROM_CODE = { fx:'floor', ph:'phorse', sr:'rings',
+    vt:'vault', pb:'pbars',   hb:'hbar' 
+  };
+
+  let filled = 0;
+
+  document.querySelectorAll('div.table-responsive table tbody tr')
+          .forEach(row => {
+    const tds   = row.children;
+    const first = tds[0].textContent.trim().toLowerCase();
+    const last  = tds[1].textContent.trim().toLowerCase();
+
+    // event code lives in ?ev=xx on the Submit link
+    const href  = row.querySelector('a.submit_btn')?.href || '';
+    const code  = new URLSearchParams(href.split('?')[1] || '')
+                      .get('ev')?.toLowerCase();
+    const event = EV_FROM_CODE[code] || '';
+    
+
+    const key   = `${event}:${last}`;
+    console.log("found key: ", key);
+    const match = lookup[key];
+
+    // optional: fuzzy fallback if first names mismatch slightly
+    if (match && (!match.first || match.first.startsWith(first[0]))) {
+      row.querySelector('input.id').value = match.id;
+      filled++;
+      // tiny visual cue
+      row.style.outline = '2px solid #4caf50';
+    }
+  });
+
+  return filled;
+}
+
+//--------------------------------------------------------------------------- //
+/** Main entry called from popup */
 export async function autofillOnSite() {
+  const lookup = await buildLookup();
+  if (!Object.keys(lookup).length) {
+    alert('No cached uploads to autofill.');
+    return;
+  }
 
-  // 1) get active tab
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const url    = new URL(tab.url);
-
-  // 2) verify domain
-  if (!url.hostname.includes("roadtonationals.com/results")) {
-    alert("Please navigate to the Road2Nationals Meet Videos entry page first.");
+  if (!tab?.url) {
+    alert('Please open the RoadToNationals edit page before clicking “Autofill”.');
     return;
   }
   
-  // 1) get uploaded video meta
-  const uploadedVideos = await getStoredVideoIDs();
-  if (!uploadedVideos.length) {
-    alert('No uploaded videos cached for autofill.');
+  const url = new URL(tab.url);
+  
+  // 1) host must be RoadToNationals
+  if (!url.hostname.endsWith('roadtonationals.com')) {
+    alert('Please navigate to a Road2Nationals page first.');
+    return;
+  }
+  
+  // 2) option-al: path must contain “results” (or whatever section you require)
+  if (!url.pathname.includes('/results')) {
+    alert('Please open the Meet-Videos entry page before using Autofill.');
     return;
   }
 
-  // 2) build lookup
-  const EVENT_MAP = { floor:['floor','fx'], phorse:['phorse','pommel','ph'], rings:['rings','sr'],
-                      vault:['vault','vt'], pbars:['pbars','parallel','pb'], hbar:['hbar','high','hb'] };
-  const lookup = {};
-
-  for (const { title, id } of uploadedVideos) {
-    const tokens = title.toLowerCase().split(/[^a-z]+/);
-    const event  = Object.keys(EVENT_MAP)
-                          .find(ev => tokens.some(t => EVENT_MAP[ev].includes(t)));
-    if (!event) continue;
-
-    // assume last token before event aliases is the last name
-    const idx = tokens.findIndex(t => EVENT_MAP[event].includes(t));
-    const first = tokens[idx - 2] ?? '';   // very heuristic, but works for "Joseph Conley Floor"
-    const last  = tokens[idx - 1] ?? '';
-    lookup[`${event}:${last}`] = { id, first, last };
-  }
-
-  // 3) inject a content script in the active tab
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    args: [lookup],
-    func: (lookup) => {
-      const filled = [];
-      document.querySelectorAll('table').forEach(tbl => {
-        const eventKey = tbl.previousElementSibling.textContent.trim().toLowerCase();
-        tbl.querySelectorAll('tr').forEach(row => {
-          const last = row.children[1].textContent.trim().toLowerCase();
-          const key  = `${eventKey}:${last}`;
-          if (lookup[key]) {
-            row.querySelector('input[type="text"][name*="youtube"]').value = lookup[key].id;
-            filled.push(key);
-          }
-        });
-      });
-      return filled.length;
+  chrome.scripting.executeScript(
+    {
+      target: { tabId: tab.id },
+      args:   [lookup],
+      func:   fillTable
+    },
+    ([{ result: count }]) => {
+      alert(`Autofill finished - ${count} row${count === 1 ? '' : 's'} updated.`);
     }
-  }, ([{ result: count }]) => {
-      alert(`Autofill complete - ${count} rows updated.`);
-  });
+  );
 }
