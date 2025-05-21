@@ -1,6 +1,6 @@
 // youtubeApi.js
 
-import { chromeStorageGet, chromeStorageSet } from "../background/oauth.js";
+import { chromeStorageGet, chromeStorageRemove } from "../background/oauth.js";
 import { showUploadStatus, withAutoReauth, buildDescription } from "../utils/utils.js";
 
 const MUPLOAD_STEPS = 3;
@@ -241,6 +241,7 @@ export async function massUploadAllVideosToPlaylist(
   // 3) Save all uploaded video IDs to storage
   showUploadStatus("Saving video IDs to storage...", TSTEPS, TSTEPS-1, "progress", []);
   
+  await chromeStorageRemove(['videoData']);
   await saveVideoIdsToStorage(uploadedVideos);
 
   // Show success message with all uploaded video data

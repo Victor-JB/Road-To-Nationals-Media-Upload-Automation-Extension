@@ -1,9 +1,5 @@
 // popup.js
-import { 
-  getAccessToken, 
-  chromeStorageGet, 
-  chromeStorageRemove 
-} from "../background/oauth.js";
+import { getAccessToken } from "../background/oauth.js";
 import {
   listFoldersInDriveWithAutoReauth,
   listVideosInFolderWithAutoReauth,
@@ -64,6 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const videoData = await getStoredVideoIDs();
   if (videoData.length > 0) {
+    console.log("popup.js: got videoData", videoData);
 
     // collapse/expand logic
     const header   = document.getElementById('persistedHeader');
@@ -71,8 +68,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const toggle   = document.getElementById('togglePersisted');
     const clearer  = document.getElementById('clearPersisted');
     const list  = document.getElementById('persistedList');
-
-    console.log("popup.js: got videoData", videoData);
 
     if (videoData.length) {
       container.style.display = 'block';
@@ -87,8 +82,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         li.appendChild(a);
         list.appendChild(li);
       });
-
-
     }
 
     header.addEventListener('click', () => {
@@ -102,8 +95,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // clear storage & hide container
     clearer.addEventListener('click', async (e) => {
       e.stopPropagation();           // don’t toggle collapse
-      await chromeStorageRemove(['videoData']);
-      console.log("popup.js: cleared videoData");
       container.style.display = 'none';
     });
   }
@@ -144,7 +135,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         alert("Failed to retrieve token for mass upload.");
         return;
       }
-  
   
       // Call the mass upload function with a step update callback
       await massUploadAllVideosToPlaylist(
