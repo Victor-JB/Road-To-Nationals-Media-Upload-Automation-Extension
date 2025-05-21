@@ -11,32 +11,37 @@ const EVENT_ALIAS = {
   hbar:   ['hbar',  'high', 'hb']
 };
 
-
 //--------------------------------------------------------------------------- //
 /** Build { "event:last": {id, first, last} } for quick lookup */
 async function buildLookup() {
-  const uploadedVideos = await getStoredVideoIDs();
-  const map = {};
+  const uploadedVideos = await getStoredVideoIDs();   // [{ title, id }, …]
+  const lookup = {};
 
   uploadedVideos.forEach(({ title, id }) => {
-    const low = title.toLowerCase();
-    const tokens = low.split(/[^a-z]+/);
+    const low     = title.toLowerCase();
+    const tokens  = low.split(/[^a-z]+/);
 
-    // find event alias in title
+    // 1) find the event in the title
     const event = Object.keys(EVENT_ALIAS)
       .find(ev => tokens.some(t => EVENT_ALIAS[ev].includes(t)));
     if (!event) return;
 
-    // crude: assume last two tokens before alias are first/last
-    const idx = tokens.findIndex(t => EVENT_ALIAS[event].includes(t));
+    // 2) crude name extraction: the two tokens before event alias
+    const idx   = tokens.findIndex(t => EVENT_ALIAS[event].includes(t));
     const first = tokens[idx - 2] ?? '';
     const last  = tokens[idx - 1] ?? '';
-    if (!last) return;
+    if (!first && !last) return;           // nothing usable
 
-    map[`${event}:${last}`] = { id, first, last };
+    const meta = { id, first, last };      // ← now defined
+
+    lookup[event]            ??= { last:{}, first:{}, combo:{} };
+    if (last)  lookup[event].last [last]            = meta;
+    if (first) lookup[event].first[first]           = meta;
+    if (first && last)
+               lookup[event].combo[first + last]    = meta;
   });
 
-  return map;
+  return lookup;      // { floor:{last:{…}, first:{…}, combo:{…}}, … }
 }
 
 //--------------------------------------------------------------------------- //
@@ -61,18 +66,21 @@ function fillTable(lookup) {
                       .get('ev')?.toLowerCase();
     const event = EV_FROM_CODE[code] || '';
     
+    const bucket = lookup[event] || {};
+    console.log('bucket', bucket);
+    const match  = bucket.last?.[last]               // ← now safe
+                || bucket.first?.[first]
+                || bucket.combo?.[first + last];
 
-    const key   = `${event}:${last}`;
-    console.log("found key: ", key);
-    const match = lookup[key];
-
-    // optional: fuzzy fallback if first names mismatch slightly
-    if (match && (!match.first || match.first.startsWith(first[0]))) {
+    if (match) {
       row.querySelector('input.id').value = match.id;
-      filled++;
-      // tiny visual cue
       row.style.outline = '2px solid #4caf50';
+      filled++;
+      console.log('Matched', event, first, last, '→', match.id);
+    } else {
+      console.log('No match for', event, first, last);
     }
+
   });
 
   return filled;
