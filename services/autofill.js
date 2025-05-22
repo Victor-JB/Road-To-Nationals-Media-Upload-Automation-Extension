@@ -16,6 +16,7 @@ const EVENT_ALIAS = {
 async function buildLookup() {
   const uploadedVideos = await getStoredVideoIDs();   // [{ title, id }, …]
   const lookup = {};
+  const issues  = [];
 
   uploadedVideos.forEach(({ title, id }) => {
     const low     = title.toLowerCase();
@@ -24,13 +25,19 @@ async function buildLookup() {
     // 1) find the event in the title
     const event = Object.keys(EVENT_ALIAS)
       .find(ev => tokens.some(t => EVENT_ALIAS[ev].includes(t)));
-    if (!event) return "Unable to find event in title: " + title;
+    if (!event) {
+      issues.push(`No event found in "${title}"`);
+      return;           // no event found
+    }
 
     // 2) crude name extraction: the two tokens before event alias
     const idx   = tokens.findIndex(t => EVENT_ALIAS[event].includes(t));
     const first = tokens[idx - 2] ?? '';
     const last  = tokens[idx - 1] ?? '';
-    if (!first && !last) return;           // nothing usable
+    if (!first && !last) {
+      issues.push(`No athlete name found in "${title}"`);
+      return;                         // skip this video
+    }
 
     const meta = { id, first, last };      // ← now defined
 
@@ -41,7 +48,7 @@ async function buildLookup() {
                lookup[event].combo[first + last]    = meta;
   });
 
-  return lookup;      // { floor:{last:{…}, first:{…}, combo:{…}}, … }
+  return { lookup, issues }; // { floor:{last:{…}, first:{…}, combo:{…}}, … }
 }
 
 //--------------------------------------------------------------------------- //
@@ -89,10 +96,17 @@ function fillTable(lookup) {
 //--------------------------------------------------------------------------- //
 /** Main entry called from popup */
 export async function autofillOnSite() {
-  const lookup = await buildLookup();
-  alert('lookup built: ' + JSON.stringify(lookup));
+
+  const { lookup, issues } = await buildLookup();
+  if (issues.length) {
+    alert(
+    `Skipped ${issues.length} video${issues.length > 1 ? 's' : ''}:\n` +
+    issues.join('\n')
+    );
+  }
+
   if (!Object.keys(lookup).length) {
-    alert('No cached uploads to autofill.');
+    alert('No parsable uploads to autofill.');
     return;
   }
 
