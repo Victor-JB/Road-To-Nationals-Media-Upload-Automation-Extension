@@ -1,7 +1,12 @@
 // youtubeApi.js
 
-import { chromeStorageGet, chromeStorageRemove, chromeStorageSet } from "../background/oauth.js";
-import { showUploadStatus, withAutoReauth, buildDescription } from "../utils/utils.js";
+import { chromeStorageGet, chromeStorageSet } from "../background/oauth.js";
+import { 
+  showUploadStatus, 
+  withAutoReauth, 
+  buildDescription, 
+  updateHistoryList 
+} from "../utils/utils.js";
 
 const MUPLOAD_STEPS = 3;
 
@@ -9,15 +14,20 @@ const MUPLOAD_STEPS = 3;
  * Saves uploaded video IDs to chrome.storage.local.
  * The key is the video title, and the value is the video ID.
 */
-export async function saveVideoIdsToStorage(videoData) {
-  chromeStorageSet({ videoData })
+export async function saveVideoIdsToStorage(newVideoData, append=false) {
+  if (append) {
+    const { videoData = [] } = await chromeStorageGet("videoData");
+    newVideoData = [...videoData, ...newVideoData];
+  }
+  chromeStorageSet({ videoData: newVideoData })
     .then(() => {
-      console.log("Video data saved:", videoData);
+      console.log("Video data saved:", newVideoData);
     })
     .catch((error) => {
       console.error("Error saving video data:", error);
     });
 }
+
 /**
  * Fetch all stored video-ID entries and return
  * them as an array of { title, id } objects.
@@ -195,14 +205,14 @@ async function addVideoToPlaylist(accessToken, playlistId, videoId) {
  * - 3) Insert the uploaded videoId into that playlist
  */
 export async function massUploadAllVideosToPlaylist(
-  videosScoreMap, 
+  videosInfoMap, 
   playlistName, 
   playlistDescription, 
   accessToken, 
 ) {
   const uploadedVideos = [];
   let stepMessage = "";
-  const totalVideos = videosScoreMap.length;
+  const totalVideos = videosInfoMap.length;
   const TSTEPS = MUPLOAD_STEPS + totalVideos;
 
   // Show initial status
@@ -215,9 +225,9 @@ export async function massUploadAllVideosToPlaylist(
   showUploadStatus("Uploading all videos to playlist...", TSTEPS, 2, "progress", [], "Step 2: Uploading videos...");
   // 2) Loop through each video => upload => add to playlist
   for (let i = 0; i < totalVideos; i++) {
-    const file = videosScoreMap[i][0];
-    const score_desc = videosScoreMap[i][1];
-    const title = videosScoreMap[i][2];
+    const file = videosInfoMap[i][0];
+    const score_desc = videosInfoMap[i][1];
+    const title = videosInfoMap[i][2];
 
     stepMessage = `Step 2.${i + 1}: Uploading video ${i + 1} of ${totalVideos} (${title})...`;
     showUploadStatus("Uploading all videos to playlist...", TSTEPS, 3 + i, "progress", [], stepMessage);
@@ -229,19 +239,19 @@ export async function massUploadAllVideosToPlaylist(
       accessToken,
     );
 
-    stepMessage = `Step 2.${i + 2}: Adding video ${i + 1} of ${totalVideos} (${file.name}) to playlist...`;
+    stepMessage = `Step 2.${i + 2}: Adding video ${i + 1} of ${totalVideos} (${title}) to playlist...`;
     showUploadStatus("Uploading all videos to playlist...", TSTEPS, 3 + i, "progress", [], stepMessage);
     await addVideoToPlaylist(accessToken, playlistId, uploadedVideo.id);
 
     // Save the uploaded video's title and ID
-    uploadedVideos.push({ title: file.name, id: uploadedVideo.id });
+    uploadedVideos.push({ title: title, id: uploadedVideo.id });
   }
 
   // 3) Save all uploaded video IDs to storage
   showUploadStatus("Saving video IDs to storage...", TSTEPS, TSTEPS-1, "progress", []);
-  
-  await chromeStorageRemove(['videoData']);
-  await saveVideoIdsToStorage(uploadedVideos);
+
+  await saveVideoIdsToStorage(uploadedVideos, false);
+  updateHistoryList(uploadedVideos);
 
   // Show success message with all uploaded video data
   showUploadStatus(

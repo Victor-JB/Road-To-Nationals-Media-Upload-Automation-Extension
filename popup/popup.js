@@ -11,7 +11,7 @@ import {
   getStoredVideoIDs,
 } from "../services/youtubeApi.js";
 import { autofillOnSite } from "../services/autofill.js";
-import { showUploadStatus } from "../utils/utils.js";
+import { showUploadStatus, updateHistoryList } from "../utils/utils.js";
 
 // We'll store the fetched folders in this array for searching
 let allFolders = [];
@@ -68,23 +68,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const body     = document.getElementById('persistedBody');
     const toggle   = document.getElementById('togglePersisted');
     const clearer  = document.getElementById('clearPersisted');
-    const list  = document.getElementById('persistedList');
     const autofillButton = document.getElementById('autofillButton-prevIds');
 
-    if (videoData.length) {
-      container.style.display = 'block';
-      list.innerHTML = '';
-      videoData.forEach(({ title, id }) => {
-        const li = document.createElement('li');
-        li.textContent = `${title} — `;
-        const a = document.createElement('a');
-        a.href   = `https://youtu.be/${id}`;
-        a.target = '_blank';
-        a.textContent = id;
-        li.appendChild(a);
-        list.appendChild(li);
-      });
-    }
+    updateHistoryList(videoData);
 
     autofillButton.style.display = "inline-block";
     autofillButton.addEventListener('click', async (e) => {
@@ -118,7 +104,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const playlistDescription  = document.getElementById("playlistDescriptionInput").value.trim(); 
       const videoItems = document.querySelectorAll(".videoItem");
       
-      const videoScoreMap = [];
+      const videoInfoMap = [];
 
       if (!playlistName) {
         alert("Please enter a playlist name first.");
@@ -132,18 +118,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       videoItems.forEach((videoItem, index) => {
         const scoreInput = videoItem.querySelector(".scoreInput");
         const nameEventInput = videoItem.querySelector(".nameEventInput");
+        const file = currentVideos[index]; // Assuming the order is maintained
 
         const score = scoreInput ? scoreInput.value.trim() : "";
         const nameString = nameEventInput?.value.trim() ?? ''
-
-        const file = currentVideos[index]; // Assuming the order is maintained
+        
         const base = nameString || file.name;
-        const title = athleteString && playlistName
+        const title = nameString && playlistName
                         ? `${base} ${playlistName}`  // override + playlist
                         : base;
 
         if (file && file.id) {
-          videoScoreMap[index] = [file, score, title];
+          videoInfoMap[index] = [file, score, title];
         }
       });
   
@@ -155,7 +141,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   
       // Call the mass upload function with a step update callback
       await massUploadAllVideosToPlaylist(
-        videoScoreMap,
+        videoInfoMap,
         playlistName,
         playlistDescription,
         token
@@ -299,6 +285,7 @@ function renderVideoList(videos, accessToken, folderName) {
         const playlistName = playlistElmt.value.trim();
         const score = scoreInput.value.trim();
         const athleteString = nameEvt.value.trim();
+
         const base = athleteString || file.name;
         const title = athleteString && playlistName
                         ? `${base} ${playlistName}`  // override + playlist
@@ -314,9 +301,12 @@ function renderVideoList(videos, accessToken, folderName) {
     
         // Save the uploaded video ID to storage
         const videoData = [{ title: title, id: uploadedVideo.id }];
-        await saveVideoIdsToStorage(videoData);
+        await saveVideoIdsToStorage(videoData, true);
         
         showUploadStatus(`Successfully uploaded ${title}!`, 3, 3, "success", videoData);
+
+        const updatedVideoData = await getStoredVideoIDs();
+        updateHistoryList(updatedVideoData);
     
       } catch (err) {
         console.error("Upload failed:", err);

@@ -1,5 +1,3 @@
-- change Workflow & Planning tag, that is not the extension...
-
 
 High:
 1. add easy athlete name / event / meet name inpout, not even have to rename videos
@@ -18,7 +16,6 @@ high priority:
 3. PARELLEL UPLOADS--upload multiple videos at once for mass upload
 4. better progress bar, with blobs so that video progress is tracked
 Upload all of these safeguardand performance enhancers before releasing next version to puboic
-
 
 
 1. add field for meet name, to not have person re copy pasting the name

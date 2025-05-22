@@ -24,7 +24,7 @@ async function buildLookup() {
     // 1) find the event in the title
     const event = Object.keys(EVENT_ALIAS)
       .find(ev => tokens.some(t => EVENT_ALIAS[ev].includes(t)));
-    if (!event) return;
+    if (!event) return "Unable to find event in title: " + title;
 
     // 2) crude name extraction: the two tokens before event alias
     const idx   = tokens.findIndex(t => EVENT_ALIAS[event].includes(t));
@@ -90,6 +90,7 @@ function fillTable(lookup) {
 /** Main entry called from popup */
 export async function autofillOnSite() {
   const lookup = await buildLookup();
+  alert('lookup built: ' + JSON.stringify(lookup));
   if (!Object.keys(lookup).length) {
     alert('No cached uploads to autofill.');
     return;

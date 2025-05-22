@@ -298,6 +298,12 @@
     color: #c62828;
   }
   
+  #uploadStatus button {
+    display:inline-block;   /* side-by-side */
+    margin-right:8px;       /* little gap */
+    margin-top:4px;         /* keeps them clear of the progress bar */
+  }
+  
   .massUploadContainer {
     margin-bottom: 12px;
   }

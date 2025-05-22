@@ -33,9 +33,35 @@ export function withAutoReauth(fn) {
 
 // -------------------------------------------------------------------------- //
 /**
+ * Updates the history list with the provided video data.
+ *
+ * @param {Array} videoData - An array of video objects containing title and id.
+ */
+export function updateHistoryList(videoData) {
+  const container = document.getElementById('persistedContainer');
+  const list  = document.getElementById('persistedList');
+  container.style.display = 'block';
+    list.innerHTML = '';
+    videoData.forEach(({ title, id }) => {
+      const li = document.createElement('li');
+      li.textContent = `${title} — `;
+      const a = document.createElement('a');
+      a.href   = `https://youtu.be/${id}`;
+      a.target = '_blank';
+      a.textContent = id;
+      li.appendChild(a);
+      list.appendChild(li);
+  });
+}
+
+// -------------------------------------------------------------------------- //
+/**
 * Utility functions for the GymACT Road2Nationals Uploader.
 * These functions are used to build the description for the uploaded videos
 * and to handle the score input.
+* 
+* @param {string} originalDescription - The original description to build upon.
+* @returns {string} The formatted score line for the video description.
 */
 export function buildDescription(originalDescription) {
     // fall back to blank if user left the box empty
