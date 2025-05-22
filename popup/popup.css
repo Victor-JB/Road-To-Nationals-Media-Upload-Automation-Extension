@@ -263,6 +263,21 @@
     margin-left: auto; /* push action buttons to the right */
     font-size: 0.8rem;
   }
+
+  .video-name {
+    flex: 1 1 auto;           /* let it shrink                     */
+    min-width: 0;             /* allow shrink below content width  */
+  
+    /* pick ONE of these visual policies ———————————— */
+  
+    /* A) truncate with …                                    */
+    white-space: wrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  
+    /* B) or wrap/break anywhere if you prefer multi-line    */
+    /* overflow-wrap: anywhere;    word-break: break-all;    */
+  }
   
   /* score input */
   .scoreInput {

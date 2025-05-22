@@ -1,12 +1,15 @@
 
 High:
-1. add easy athlete name / event / meet name inpout, not even have to rename videos
 1. HAVE THE FOLDERS PERSIST, NOT A BAJILLION API CALLS TO DO SO
 3. create example usage, so people know how it works
  - specifically for how the naming works, and how manahgers can either rename the videos or use the builtin forms to rename the videos
   - also explain how the matching works for the autofill
 4. donation set up -- can donate
 5. CREATE ONBOARDING PAGE THAT IS OPENED UPON INSTALL? Can do donation + demo of how it works
+6. state of entering videos in AND THE FOLDERS / VIDEOS THEMSELVES persist and are saved; fewer api calls, user can exit extension and stuff saves
+7. VIDEO PREVIEW -- CAN KNOW WHICH ATHLETE DIRECTLY IN THE EXTENSION -- pick a time in the middle of the routine to be able to tell, when hover over it it plays
+8. then make dropdown for athlete name and event, super easy
+9. read scores off of road to nationals with the name and event selected
 
 
 high priority:
@@ -17,8 +20,6 @@ high priority:
 4. better progress bar, with blobs so that video progress is tracked
 Upload all of these safeguardand performance enhancers before releasing next version to puboic
 
-
-1. add field for meet name, to not have person re copy pasting the name
 2. add loading icon for refresh folders
 
 
@@ -26,24 +27,14 @@ Upload all of these safeguardand performance enhancers before releasing next ver
 put in initial template
 2. streamlining process further, reducing number of fields user needs to input, standardize and save preferences
 3. donate button "buy coffee" in extension and chrome web store
-4. consider making larger
 
 Later:
 - CV to read score values off of score sheet
 
-- consider reuahting inside of base functions, not doubling function count with reauth wrappers
 - better error handling in general--making sure entire extension doesn't die over one error
-- better message logging and video progress tracking for mass upload!! should be same as individual uploa
-- ensure loading bar is actually accurate and updates per video when the videos are being loaded
 
-- ensure the correct prod oauth client is being used for prod, the only one that is going to request google access
-     - get oauth for this 
-
-1. fix progress bar -- make it actually legit
 3. better readme -- use nice template from the other guy
-4. Use jquery to automatically populate fields youtube ids for road 2 nationals whilst logged into the site!
 5. possibly ask road2nationals for api collaboration
-6. more robust error handling -- always 
 7. figure out distribution--getting it to more teams if it is useful
 8. figure out how it works on mobile--if it looks nice, works well, can be done quickly upon
 logging into the site, even from the meet
@@ -51,9 +42,6 @@ logging into the site, even from the meet
 Critical:
 - zip new package and upload to web store for verification
 - add a link to the privacy policy in the extension
-- verification for google oauth consent screen
-- also make a field for the video name as well
-- use jquery to populate youtube ID fields in road2nat automatically
 
 MAKE A "HOW TO USE" doc for first time users, it redirects you to that site +
 have the url in the extension itself; explain how you need to name videos accordingly,

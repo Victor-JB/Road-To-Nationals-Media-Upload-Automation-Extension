@@ -9,6 +9,45 @@ import {
 } from "../utils/utils.js";
 
 const MUPLOAD_STEPS = 3;
+const SESSION_KEY = 'massUploadSession';
+
+/**
+ * {
+ *   folderId:    '1aBcD',          // Google-Drive folder
+ *   playlistId:  'PLxyz',          // created at runtime (or '')
+ *   playlistName:'2025 Nationals', // for title concatenation
+ *   index:       0,                // NEXT video to upload
+ *   jobs: [                      // same order as the folder listing
+ *     {
+ *       driveId:     'file123',
+ *       customTitle: 'Joseph Conley FX',
+ *       score:       '13.05',      // if you keep that field
+ *       status:      'pending' | 'done' | 'error',
+ *       youtubeId:   'abcdEFGhijk' // set when done
+ *     }, …
+ *   ]
+ * }
+ */
+
+function loadSession() {
+  return new Promise(resolve =>
+    chrome.storage.local.get(SESSION_KEY, data =>
+      resolve(data[SESSION_KEY] || null)
+    )
+  );
+}
+
+function saveSession(session) {
+  return new Promise(resolve =>
+    chrome.storage.local.set({ [SESSION_KEY]: session }, resolve)
+  );
+}
+
+function clearSession() {
+  return new Promise(resolve =>
+    chrome.storage.local.remove(SESSION_KEY, resolve)
+  );
+}
 
 /**
  * Saves uploaded video IDs to chrome.storage.local.

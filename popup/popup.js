@@ -258,7 +258,11 @@ function renderVideoList(videos, accessToken, folderName) {
 
     const li = document.createElement("li");
     li.className = "videoItem";
-    li.textContent = `${file.name} (${file.mimeType})`;
+    
+    const nameSpan       = document.createElement('span');
+    nameSpan.className   = 'video-name';
+    nameSpan.textContent = `${file.name} (${file.mimeType})`;
+    li.appendChild(nameSpan);
 
     // creating name + event input
     const nameEvt = document.createElement('input');
