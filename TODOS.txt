@@ -2,7 +2,7 @@
 High:
 1. HAVE THE FOLDERS PERSIST, NOT A BAJILLION API CALLS TO DO SO
 3. create example usage, so people know how it works
- - specifically for how the naming works, and how manahgers can either rename the videos or use the builtin forms to rename the videos
+ - specifically for how the naming works, and how managers can either rename the videos or use the builtin forms to rename the videos
   - also explain how the matching works for the autofill
 4. donation set up -- can donate
 5. CREATE ONBOARDING PAGE THAT IS OPENED UPON INSTALL? Can do donation + demo of how it works
@@ -10,7 +10,7 @@ High:
 7. VIDEO PREVIEW -- CAN KNOW WHICH ATHLETE DIRECTLY IN THE EXTENSION -- pick a time in the middle of the routine to be able to tell, when hover over it it plays
 8. then make dropdown for athlete name and event, super easy
 9. read scores off of road to nationals with the name and event selected
-
+10. make it larger
 
 high priority:
 1. implement queue for upload clicking; as in, the current upload doesn't get killed if person clicks button for next upload
