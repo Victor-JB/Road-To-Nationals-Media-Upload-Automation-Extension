@@ -1,6 +1,7 @@
 // driveApi.js
 
 import { withAutoReauth } from "../utils/utils.js";
+import { cacheFolders, getCachedFolders } from "./folderCache.js";
 
 // -------------------------------------------------------------------------- //
 /**
@@ -25,6 +26,32 @@ export async function listFoldersInDrive(accessToken) {
 
 	const data = await response.json();
 	return data.files || [];
+}
+
+// -------------------------------------------------------------------------- //
+/**
+ * Enhanced function that checks cache first, then fetches from API if needed
+ * @param {string} accessToken - OAuth token
+ * @param {boolean} forceRefresh - If true, bypasses cache and fetches fresh data
+ * @returns {Promise<Array>} - Array of folder objects
+ */
+export async function listFoldersInDriveWithCache(accessToken, forceRefresh = false) {
+  // Check cache first unless force refresh is requested
+  if (!forceRefresh) {
+    const cachedFolders = await getCachedFolders();
+    if (cachedFolders) {
+      return cachedFolders;
+    }
+  }
+
+  // Fetch fresh data from API
+  console.log('Fetching fresh folder data from Drive API...');
+  const folders = await listFoldersInDrive(accessToken);
+  
+  // Cache the results
+  await cacheFolders(folders);
+  
+  return folders;
 }
 
 // -------------------------------------------------------------------------- //
@@ -87,3 +114,7 @@ export const listFoldersInDriveWithAutoReauth =
 	withAutoReauth(listFoldersInDrive);
 export const listVideosInFolderWithAutoReauth =
 	withAutoReauth(listVideosInFolder);
+
+// New cached version with auto-reauth
+export const listFoldersInDriveWithCacheAndAutoReauth =
+	withAutoReauth(listFoldersInDriveWithCache);

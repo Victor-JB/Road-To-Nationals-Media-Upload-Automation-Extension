@@ -3,6 +3,7 @@ import { getAccessToken } from "../background/oauth.js";
 import {
 	listFoldersInDriveWithAutoReauth,
 	listVideosInFolderWithAutoReauth,
+	listFoldersInDriveWithCacheAndAutoReauth,
 } from "../services/driveApi.js";
 import {
 	uploadToYouTubeWithAutoReauth,
@@ -33,6 +34,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const uploadAllBtn = document.getElementById("uploadAllButton");
 	const container = document.getElementById("persistedContainer");
 
+	// Initial load of folders from cache
+	(async function initialLoad() {
+		const token = await getAccessToken();
+		if (token) {
+			try {
+				allFolders = await listFoldersInDriveWithCacheAndAutoReauth(token, false);
+				if (allFolders && allFolders.length) {
+					renderFolderList(allFolders, token);
+				}
+			} catch (err) {
+				console.log("No valid cache or load failed", err);
+			}
+		}
+	})();
+
 	// == refresh folders button == //
 	refreshFoldersBtn.addEventListener("click", async () => {
 		const token = await getAccessToken();
@@ -42,7 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		}
 
 		try {
-			allFolders = await listFoldersInDriveWithAutoReauth(token);
+			allFolders = await listFoldersInDriveWithCacheAndAutoReauth(token, true);
 			renderFolderList(allFolders, token);
 		} catch (err) {
 			console.error("Error listing folders:", err);
