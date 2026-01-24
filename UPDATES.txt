@@ -28,6 +28,9 @@ Ver 1.8
 - Added 'activeTab' permission to manifest to be able to identify current tab url
 - Added 'script' permission to manifest to be able to inject script into Road2Nationals to autofill video ids
 
+Ver 1.9
+- Added folder caching to reduce number of folder fetch calls
+
 Incoming Ver 2.0
 - YouTube upload session also persists in case of accidental extension closure
 - Added video action queue so previous action doesn't get killed if the user clicks the button for the next upload

@@ -39,7 +39,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 		const token = await getAccessToken();
 		if (token) {
 			try {
-				allFolders = await listFoldersInDriveWithCacheAndAutoReauth(token, false);
+				allFolders = await listFoldersInDriveWithCacheAndAutoReauth(
+					token,
+					false
+				);
 				if (allFolders && allFolders.length) {
 					renderFolderList(allFolders, token);
 				}
@@ -283,6 +286,65 @@ function renderVideoList(videos, accessToken, folderName) {
 
 		const li = document.createElement("li");
 		li.className = "videoItem";
+
+		// -- NEW: Video Preview Block --
+		const previewWrapper = document.createElement("div");
+		previewWrapper.className = "video-preview-wrapper";
+
+		const thumbnailImg = document.createElement("img");
+		thumbnailImg.className = "video-preview-thumb";
+		// drive sometimes returns no thumbnailLink, or we can use a placeholder
+		thumbnailImg.src = file.thumbnailLink || "../icons/icon48.png";
+		previewWrapper.appendChild(thumbnailImg);
+
+		// We will create the video element ONLY on hover to save resources
+		let videoEl = null;
+
+		previewWrapper.addEventListener("mouseenter", () => {
+			if (!videoEl) {
+				previewWrapper.classList.add("loading");
+				videoEl = document.createElement("video");
+				videoEl.className = "video-preview-player";
+				videoEl.muted = true;
+				videoEl.playsInline = true;
+				// Trick to authenticate media request: append access token
+				// NOTE: verify 'token' is available in scope (passed to renderVideoList)
+				videoEl.src = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&access_token=${accessToken}`;
+
+				videoEl.oncanplay = () => {
+					previewWrapper.classList.remove("loading");
+					videoEl.style.display = "block";
+				};
+
+				previewWrapper.appendChild(videoEl);
+			} else {
+				videoEl.style.display = "block";
+				// if it was paused/hidden, make sure it's ready
+			}
+		});
+
+		previewWrapper.addEventListener("mousemove", (e) => {
+			if (videoEl && videoEl.duration) {
+				const rect = previewWrapper.getBoundingClientRect();
+				const x = e.clientX - rect.left;
+				const width = rect.width;
+				const percent = Math.max(0, Math.min(1, x / width));
+				// Set time based on mouse position (scrubbing)
+				videoEl.currentTime = videoEl.duration * percent;
+			}
+		});
+
+		previewWrapper.addEventListener("mouseleave", () => {
+			if (videoEl) {
+				videoEl.style.display = "none";
+				videoEl.pause();
+				// Optional: remove it entirely to free memory if list is huge
+				// videoEl.remove(); videoEl = null;
+			}
+		});
+
+		li.appendChild(previewWrapper);
+		// -- End Video Preview Block --
 
 		const nameSpan = document.createElement("span");
 		nameSpan.className = "video-name";

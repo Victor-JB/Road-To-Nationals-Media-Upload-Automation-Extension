@@ -1,111 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Road to Nationals Uploader</title>
-  <link rel="stylesheet" href="popup.css">
-  <script type="module" defer src="popup.js"></script>
-</head>
-<body>
-  <div id="popupContainer">
-    <header>
-      <a href="https://victor-jb.github.io/Road2Nationals-Extension-Home-Site/" target="_blank" >
-        <img src="../icons/logo.png" alt="Extension Logo" class="headerLogo" />
-      </a>
-      <h1 class="extensionTitle">Road to Nationals Uploader</h1>
-    </header>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Road to Nationals Uploader</title>
+		<link rel="stylesheet" href="popup.css" />
+		<link rel="stylesheet" href="videoPreview.css" />
+		<script type="module" defer src="popup.js"></script>
+	</head>
+	<body>
+		<div id="popupContainer">
+			<header>
+				<a
+					href="https://victor-jb.github.io/Road2Nationals-Extension-Home-Site/"
+					target="_blank"
+				>
+					<img
+						src="../icons/logo.png"
+						alt="Extension Logo"
+						class="headerLogo"
+					/>
+				</a>
+				<h1 class="extensionTitle">Road to Nationals Uploader</h1>
+			</header>
 
-    <div class="instructions">
-      <p>Select a folder below to show the videos, then click "Upload to YouTube."</p>
-      <!-- The "Refresh Folders" button will re-fetch folders from Drive -->
-      <button id="refreshFolders">Refresh Folders</button>
-      <!-- The search bar for filtering the folder list -->
-      <input
-        type="text"
-        id="folderSearch"
-        placeholder="Filter folders..."
-        class="folderSearchInput"
-      />
-    </div>
+			<div class="instructions">
+				<p>
+					Select a folder below to show the videos, then click "Upload to
+					YouTube."
+				</p>
+				<!-- The "Refresh Folders" button will re-fetch folders from Drive -->
+				<button id="refreshFolders">Refresh Folders</button>
+				<!-- The search bar for filtering the folder list -->
+				<input
+					type="text"
+					id="folderSearch"
+					placeholder="Filter folders..."
+					class="folderSearchInput"
+				/>
+			</div>
 
-    <div id="resizablePanel">
-      <div class="foldersContainer" id="foldersSection">
-        <ul id="folderList" class="folderGrid"></ul>
-      </div>
-    
-      <div id="divider">
-        <div class="divider-grip">
-          <span></span><span></span><span></span><span></span>
-        </div>
-      </div>
-    
-      <div class="videosContainer" id="videosSection">
-        <!-- Move this above the video list -->
-        <div class="massUploadContainer" id="massUploadContainer" style="display:flex;align-items:center;gap:8px">
-          <!-- playlist name (already there) -->
-          <input
-              id="playlistNameInput"
-              type="text"
-              placeholder="Meet / Playlist name…"
-              style="margin-top:8px;"
-          />
+			<div id="resizablePanel">
+				<div class="foldersContainer" id="foldersSection">
+					<ul id="folderList" class="folderGrid"></ul>
+				</div>
 
-          <input
-              id="playlistDescriptionInput"
-              type="text"
-              placeholder="Description (optional)…"
-              style="margin-top:8px;flex:1"
-          />
+				<div id="divider">
+					<div class="divider-grip">
+						<span></span><span></span><span></span><span></span>
+					</div>
+				</div>
 
-          <!-- mass-upload button (already there) -->
-          <button id="uploadAllButton" style="margin-top:8px;">
-            Mass Upload to Playlist
-          </button>
-        </div>
-        
-        <div id="uploadStatus" class="upload-status" style="display: none;">
-          <span id="uploadMessage">Uploading...</span>
-          <progress id="uploadProgress" value="0" style="width: 100%; display: none;"></progress>
-          <button id="copyButton" style="display: none;">Copy All</button>
-          <button id="autofillButton" class="autofill-btn" style="display: none;">
-            Autofill YouTube IDs
-          </button>
-          <div id="collapsibleBox" class="collapsible-box" style="display: none;"></div>
-        </div>
-        
-        <!-- Persisted videos (collapsible success box) -->
-        <div id="persistedContainer" style="margin-bottom: 8px;">
-          <div id="persistedHeader"
-              class="upload-status success"
-              style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-            <span>Last uploaded videos</span>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <!-- Autofill button to push IDs into the athlete‐entry page -->
-              <button id="autofillButton-prevIds" class="autofill-btn" style="display: none; margin-left:8px;">
-                Autofill YouTube IDs
-              </button>
-              <!-- toggle arrow -->
-              <button id="togglePersisted"
-                      style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">
-                &#9660;
-              </button>
-              <!-- clear “×” -->
-              <button id="clearPersisted"
-                      style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">
-                x
-              </button>
-            </div>
-          </div>
-          <div id="persistedBody" class="collapsible-box" style="display: none; margin-top: 4px;">
-            <ul id="persistedList" style="margin: 0; padding: 0; list-style: none;"></ul>
-          </div>
-        </div>
+				<div class="videosContainer" id="videosSection">
+					<!-- Move this above the video list -->
+					<div
+						class="massUploadContainer"
+						id="massUploadContainer"
+						style="display: flex; align-items: center; gap: 8px"
+					>
+						<!-- playlist name (already there) -->
+						<input
+							id="playlistNameInput"
+							type="text"
+							placeholder="Meet / Playlist name…"
+							style="margin-top: 8px"
+						/>
 
-        <ul id="videoList" class="videoList"></ul>
-      </div>
-      
-    </div>
-    
-  </div>
-</body>
+						<input
+							id="playlistDescriptionInput"
+							type="text"
+							placeholder="Description (optional)…"
+							style="margin-top: 8px; flex: 1"
+						/>
+
+						<!-- mass-upload button (already there) -->
+						<button id="uploadAllButton" style="margin-top: 8px">
+							Mass Upload to Playlist
+						</button>
+					</div>
+
+					<div id="uploadStatus" class="upload-status" style="display: none">
+						<span id="uploadMessage">Uploading...</span>
+						<progress
+							id="uploadProgress"
+							value="0"
+							style="width: 100%; display: none"
+						></progress>
+						<button id="copyButton" style="display: none">Copy All</button>
+						<button
+							id="autofillButton"
+							class="autofill-btn"
+							style="display: none"
+						>
+							Autofill YouTube IDs
+						</button>
+						<div
+							id="collapsibleBox"
+							class="collapsible-box"
+							style="display: none"
+						></div>
+					</div>
+
+					<!-- Persisted videos (collapsible success box) -->
+					<div id="persistedContainer" style="margin-bottom: 8px">
+						<div
+							id="persistedHeader"
+							class="upload-status success"
+							style="
+								display: flex;
+								align-items: center;
+								justify-content: space-between;
+								cursor: pointer;
+							"
+						>
+							<span>Last uploaded videos</span>
+							<div style="display: flex; gap: 8px; align-items: center">
+								<!-- Autofill button to push IDs into the athlete‐entry page -->
+								<button
+									id="autofillButton-prevIds"
+									class="autofill-btn"
+									style="display: none; margin-left: 8px"
+								>
+									Autofill YouTube IDs
+								</button>
+								<!-- toggle arrow -->
+								<button
+									id="togglePersisted"
+									style="
+										background: none;
+										border: none;
+										font-size: 1.2rem;
+										cursor: pointer;
+									"
+								>
+									&#9660;
+								</button>
+								<!-- clear “×” -->
+								<button
+									id="clearPersisted"
+									style="
+										background: none;
+										border: none;
+										font-size: 1.2rem;
+										cursor: pointer;
+									"
+								>
+									x
+								</button>
+							</div>
+						</div>
+						<div
+							id="persistedBody"
+							class="collapsible-box"
+							style="display: none; margin-top: 4px"
+						>
+							<ul
+								id="persistedList"
+								style="margin: 0; padding: 0; list-style: none"
+							></ul>
+						</div>
+					</div>
+
+					<ul id="videoList" class="videoList"></ul>
+				</div>
+			</div>
+		</div>
+	</body>
 </html>

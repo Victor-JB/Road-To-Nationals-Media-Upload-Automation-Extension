@@ -35,23 +35,26 @@ export async function listFoldersInDrive(accessToken) {
  * @param {boolean} forceRefresh - If true, bypasses cache and fetches fresh data
  * @returns {Promise<Array>} - Array of folder objects
  */
-export async function listFoldersInDriveWithCache(accessToken, forceRefresh = false) {
-  // Check cache first unless force refresh is requested
-  if (!forceRefresh) {
-    const cachedFolders = await getCachedFolders();
-    if (cachedFolders) {
-      return cachedFolders;
-    }
-  }
+export async function listFoldersInDriveWithCache(
+	accessToken,
+	forceRefresh = false
+) {
+	// Check cache first unless force refresh is requested
+	if (!forceRefresh) {
+		const cachedFolders = await getCachedFolders();
+		if (cachedFolders) {
+			return cachedFolders;
+		}
+	}
 
-  // Fetch fresh data from API
-  console.log('Fetching fresh folder data from Drive API...');
-  const folders = await listFoldersInDrive(accessToken);
-  
-  // Cache the results
-  await cacheFolders(folders);
-  
-  return folders;
+	// Fetch fresh data from API
+	console.log("Fetching fresh folder data from Drive API...");
+	const folders = await listFoldersInDrive(accessToken);
+
+	// Cache the results
+	await cacheFolders(folders);
+
+	return folders;
 }
 
 // -------------------------------------------------------------------------- //
@@ -72,7 +75,7 @@ export async function listVideosInFolder(accessToken, folderId) {
 		do {
 			const q = encodeURIComponent(`'${id}' in parents and trashed = false`);
 			const fields = encodeURIComponent(
-				"nextPageToken, files(id,name,mimeType,parents)"
+				"nextPageToken, files(id,name,mimeType,parents,thumbnailLink)"
 			);
 			const base = `https://www.googleapis.com/drive/v3/files`;
 			const params =
@@ -100,6 +103,7 @@ export async function listVideosInFolder(accessToken, folderId) {
 						name: f.name,
 						mimeType: f.mimeType,
 						parent: id,
+						thumbnailLink: f.thumbnailLink,
 					});
 				}
 			}
@@ -116,5 +120,6 @@ export const listVideosInFolderWithAutoReauth =
 	withAutoReauth(listVideosInFolder);
 
 // New cached version with auto-reauth
-export const listFoldersInDriveWithCacheAndAutoReauth =
-	withAutoReauth(listFoldersInDriveWithCache);
+export const listFoldersInDriveWithCacheAndAutoReauth = withAutoReauth(
+	listFoldersInDriveWithCache
+);
