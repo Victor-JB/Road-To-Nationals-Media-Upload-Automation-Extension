@@ -52,6 +52,43 @@ export function chromeStorageRemove(keys) {
  */
 
 /**
+ * Sets a session-scoped declarativeNetRequest rule to automatically inject
+ * the Authorization header for Drive media requests.
+ * This allows <video src="..."> to work without exposing the token in the URL.
+ */
+async function setDriveAuthHeaderRule(accessToken) {
+	const RULE_ID = 1001;
+
+	await chrome.declarativeNetRequest.updateSessionRules({
+		removeRuleIds: [RULE_ID],
+		addRules: [
+			{
+				id: RULE_ID,
+				priority: 1,
+				action: {
+					type: "modifyHeaders",
+					requestHeaders: [
+						{
+							header: "Authorization",
+							operation: "set",
+							value: `Bearer ${accessToken}`,
+						},
+					],
+				},
+				condition: {
+					// Verify this pattern matches your drive file URLs
+					// "||" = domain anchor. "*" = wildcard.
+					urlFilter: "||www.googleapis.com/drive/v3/files/*",
+					// We include 'media', 'xmlhttprequest', and 'other' to cover <video> and fetch
+					resourceTypes: ["media", "xmlhttprequest", "other"],
+				},
+			},
+		],
+	});
+	console.log("Updated session rule for Drive auth header.");
+}
+
+/**
  * Returns a (cached) OAuth 2.0 access token or launches interactive flow.
  * @param {boolean} interactive - Whether to prompt the user (default: true)
  */
@@ -63,6 +100,8 @@ export async function getAccessToken(interactive = true) {
 
 	// Check if token exists and is not expired (buffer of 60s)
 	if (accessToken && tokenExpiry && Date.now() < tokenExpiry - 60000) {
+		// Refresh the rule just in case (e.g. browser restart preserved storage but cleared rules)
+		await setDriveAuthHeaderRule(accessToken);
 		return accessToken;
 	}
 
@@ -122,6 +161,9 @@ export async function getAccessToken(interactive = true) {
 		accessToken: token,
 		tokenExpiry: expiryTimestamp,
 	});
+
+	// Install the session rule with the fresh token
+	await setDriveAuthHeaderRule(token);
 
 	return token;
 }

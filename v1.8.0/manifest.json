@@ -4,15 +4,16 @@
   "version": "1.8.0",
   "description": "Automatically uploads competition videos to YouTube and Road2Nationals [not affiliated].",
   "permissions": [
-    "identity", 
+    "identity",
     "storage",
-    "activeTab", 
-    "scripting"
+    "activeTab",
+    "scripting",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
-  "https://*.roadtonationals.com/*",
-  "https://www.googleapis.com/*",
-  "https://*.googleusercontent.com/*"
+    "https://www.googleapis.com/*",
+    "https://*.googleusercontent.com/*",
+    "https://*.roadtonationals.com/*"
   ],
   "background": {
     "service_worker": "background.js"

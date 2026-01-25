@@ -347,11 +347,9 @@ function renderVideoList(videos, accessToken, folderName) {
 				previewWrapper.appendChild(videoEl);
 
 				// keep your current src approach for now
-				videoEl.src = `https://www.googleapis.com/drive/v3/files/${
-					file.id
-				}?alt=media&access_token=&access_token=${encodeURIComponent(
-					accessToken
-				)}`;
+				// UPDATED: Using declarativeNetRequest session rule for authentication
+				// This avoids putting the access token in the URL query params
+				videoEl.src = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
 				videoEl.load(); // ensure fetch starts
 			} else {
 				videoEl.style.display = "block";
