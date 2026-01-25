@@ -42,9 +42,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const uploadAllBtn = document.getElementById("uploadAllButton");
 	const container = document.getElementById("persistedContainer");
 
-    // Hide resizing panel for folders initially since we don't list folders
-    foldersSection.style.display = 'none';
-    divider.style.display = 'none';
+	// Hide resizing panel for folders initially since we don't list folders
+	foldersSection.style.display = "none";
+	divider.style.display = "none";
 
 	// Initial load of folders from cache
 	(async function initialLoad() {
@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		if (token) {
 			try {
 				// We no longer list all folders automatically.
-                // Instead, we just check for cached video state.
+				// Instead, we just check for cached video state.
 
 				// Check for cached videos content to restore state
 				const cachedVideosData = await getCachedVideos();
@@ -76,82 +76,85 @@ document.addEventListener("DOMContentLoaded", async () => {
 		if (!token) {
 			console.error("Failed to retrieve token!");
 			return;
-        }
-        
-        // Show the picker iframe
-        pickerIframe.style.display = "block";
-        // Send init message
-        // wait slightly for iframe to be ready if it wasn't
-        // But iframe src is loaded on DOMContentLoaded.
-        pickerIframe.contentWindow.postMessage({ type: 'init', token: token }, '*');
+		}
+
+		// Show the picker iframe
+		pickerIframe.style.display = "block";
+		// Send init message
+		// wait slightly for iframe to be ready if it wasn't
+		// But iframe src is loaded on DOMContentLoaded.
+		pickerIframe.contentWindow.postMessage({ type: "init", token: token }, "*");
 	});
 
-    // == Message Listener for Picker == //
-    window.addEventListener('message', async (event) => {
-        // Important: Verify origin if possible, but sandboxed iframe usually has null origin or specific
-        if (event.data.type === 'picked') {
-            pickerIframe.style.display = 'none';
-            const docs = event.data.docs;
-            await handlePickerSelection(docs);
-        } else if (event.data.type === 'cancel') {
-            pickerIframe.style.display = 'none';
-        }
-    });
+	// == Message Listener for Picker == //
+	window.addEventListener("message", async (event) => {
+		// Important: Verify origin if possible, but sandboxed iframe usually has null origin or specific
+		if (event.data.type === "picked") {
+			pickerIframe.style.display = "none";
+			const docs = event.data.docs;
+			await handlePickerSelection(docs);
+		} else if (event.data.type === "cancel") {
+			pickerIframe.style.display = "none";
+		}
+	});
 
-    /**
-     * Handles the selection from Google Picker
-     * @param {Array} docs - Array of selected documents
-     */
-    async function handlePickerSelection(docs) {
-        if (!docs || docs.length === 0) return;
+	/**
+	 * Handles the selection from Google Picker
+	 * @param {Array} docs - Array of selected documents
+	 */
+	async function handlePickerSelection(docs) {
+		if (!docs || docs.length === 0) return;
 
-        const token = await getAccessToken();
-        const firstDoc = docs[0];
+		const token = await getAccessToken();
+		const firstDoc = docs[0];
 
-        // Check mimeType to see if it's a folder
-        if (firstDoc.mimeType === 'application/vnd.google-apps.folder') {
-            // User picked a folder
-            try {
-                // We reuse listVideosInFolderWithAutoReauth logic
-                // The doc.id is the folder ID.
-                const videos = await listVideosInFolderWithAutoReauth(token, firstDoc.id);
-                
-                // Cache it
-                await cacheCurrentVideos(videos, firstDoc.name);
-                
-                // Render it
-                renderVideoList(videos, token, firstDoc.name);
-            } catch (err) {
-                console.error("Error listing videos from picked folder:", err);
-                alert("Failed to list videos from the selected folder.");
-            }
-        } else {
-            // User picked files. 
-            // We need to format them into the structure expected by renderVideoList.
-            // Expected: { id, name, mimeType, thumbnailLink }
-            // The picker returns { id, name, mimeType, iconUrl, url, ... }
-            // Picker usually returns 'iconUrl', not 'thumbnailLink'. 
-            // 'thumbnailLink' is from Drive API list.
-            // However, we can use the docs array directly, mapping fields if needed.
-            
-            // Filter only videos just in case
-            const validVideos = docs.filter(d => d.mimeType.startsWith('video/'));
-            
-            const formattedVideos = validVideos.map(d => ({
-                id: d.id,
-                name: d.name,
-                mimeType: d.mimeType,
-                thumbnailLink: d.iconUrl // Use icon as fallback or try to fetch if critical
-            }));
+		// Check mimeType to see if it's a folder
+		if (firstDoc.mimeType === "application/vnd.google-apps.folder") {
+			// User picked a folder
+			try {
+				// We reuse listVideosInFolderWithAutoReauth logic
+				// The doc.id is the folder ID.
+				const videos = await listVideosInFolderWithAutoReauth(
+					token,
+					firstDoc.id
+				);
 
-            if (formattedVideos.length > 0) {
-                 await cacheCurrentVideos(formattedVideos, "Selected Files");
-                 renderVideoList(formattedVideos, token, "Selected Files");
-            } else {
-                alert("No video files were selected.");
-            }
-        }
-    }
+				// Cache it
+				await cacheCurrentVideos(videos, firstDoc.name);
+
+				// Render it
+				renderVideoList(videos, token, firstDoc.name);
+			} catch (err) {
+				console.error("Error listing videos from picked folder:", err);
+				alert("Failed to list videos from the selected folder.");
+			}
+		} else {
+			// User picked files.
+			// We need to format them into the structure expected by renderVideoList.
+			// Expected: { id, name, mimeType, thumbnailLink }
+			// The picker returns { id, name, mimeType, iconUrl, url, ... }
+			// Picker usually returns 'iconUrl', not 'thumbnailLink'.
+			// 'thumbnailLink' is from Drive API list.
+			// However, we can use the docs array directly, mapping fields if needed.
+
+			// Filter only videos just in case
+			const validVideos = docs.filter((d) => d.mimeType.startsWith("video/"));
+
+			const formattedVideos = validVideos.map((d) => ({
+				id: d.id,
+				name: d.name,
+				mimeType: d.mimeType,
+				thumbnailLink: d.iconUrl, // Use icon as fallback or try to fetch if critical
+			}));
+
+			if (formattedVideos.length > 0) {
+				await cacheCurrentVideos(formattedVideos, "Selected Files");
+				renderVideoList(formattedVideos, token, "Selected Files");
+			} else {
+				alert("No video files were selected.");
+			}
+		}
+	}
 
 	const videoData = await getStoredVideoIDs();
 	if (videoData.length > 0) {

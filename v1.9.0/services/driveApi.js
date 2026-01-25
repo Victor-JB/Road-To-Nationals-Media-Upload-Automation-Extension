@@ -23,12 +23,12 @@ export async function listFoldersInDriveWithCache(
 	accessToken,
 	forceRefresh = false
 ) {
-    console.warn("listFoldersInDriveWithCache called but is deprecated.");
+	console.warn("listFoldersInDriveWithCache called but is deprecated.");
 	return [];
 }
 
-export const listFoldersInDriveWithCacheAndAutoReauth = (token, refresh) => listFoldersInDriveWithCache(token, refresh);
-
+export const listFoldersInDriveWithCacheAndAutoReauth = (token, refresh) =>
+	listFoldersInDriveWithCache(token, refresh);
 
 // -------------------------------------------------------------------------- //
 /**
