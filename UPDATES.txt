@@ -30,6 +30,10 @@ Ver 1.8
 
 Ver 1.9
 - Added folder caching to reduce number of folder fetch calls
+- Added athlete video preview directly in the app
+   - User scan scrub through the video to see the athlete
+- Added session-scoped declarativeNetRequest rule to automatically inject Authorization header for Drive media requests
+- Added usage of 'declarativeNetRequest' permission
 
 Incoming Ver 2.0
 - YouTube upload session also persists in case of accidental extension closure

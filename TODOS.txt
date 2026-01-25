@@ -27,32 +27,6 @@ put in initial template
 2. streamlining process further, reducing number of fields user needs to input, standardize and save preferences
 3. donate button "buy coffee" in extension and chrome web store
 
-Security:
-- ensure user access token is hidden through:
-"async function setDriveAuthHeaderRule(accessToken) {
-  const RULE_ID = 1001;
-
-  await chrome.declarativeNetRequest.updateSessionRules({
-    removeRuleIds: [RULE_ID],
-    addRules: [{
-      id: RULE_ID,
-      priority: 1,
-      action: {
-        type: "modifyHeaders",
-        requestHeaders: [{
-          header: "Authorization",
-          operation: "set",
-          value: `Bearer ${accessToken}`
-        }]
-      },
-      condition: {
-        urlFilter: "||www.googleapis.com/drive/v3/files/",
-        resourceTypes: ["media", "xmlhttprequest", "sub_frame"]
-      }
-    }]
-  });
-}
-"
 
 Later:
 - CV to read score values off of score sheet
