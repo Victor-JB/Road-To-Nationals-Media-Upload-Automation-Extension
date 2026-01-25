@@ -7,7 +7,7 @@ import {
 	getCachedVideos,
 	cacheFormState,
 	getCachedFormState,
-} from "../services/folderCache.js";
+} from "../services/caching.js";
 import {
 	uploadToYouTubeWithAutoReauth,
 	massUploadAllVideosToPlaylist,
@@ -132,8 +132,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 			return;
 		}
 
-		const validVideos = docs.filter((doc) =>
-			doc.mimeType && doc.mimeType.startsWith("video/")
+		const validVideos = docs.filter(
+			(doc) => doc.mimeType && doc.mimeType.startsWith("video/")
 		);
 
 		const formattedVideos = validVideos.map((doc) => ({
@@ -250,7 +250,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 			);
 		}
 	});
-
 });
 
 // -------------------------------------------------------------------------- //
@@ -516,4 +515,3 @@ function resolvePickerConfig() {
 	}
 	return { developerKey, appId };
 }
-

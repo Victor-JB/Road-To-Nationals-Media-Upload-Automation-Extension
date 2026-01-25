@@ -1,4 +1,4 @@
-// folderCache.js - Handles caching of picker selections in local storage
+// caching.js - Handles caching of picker selections in local storage
 
 import {
 	chromeStorageGet,
@@ -112,4 +112,3 @@ export async function clearPickerCache() {
 		console.error("Failed to clear picker cache", error);
 	}
 }
-

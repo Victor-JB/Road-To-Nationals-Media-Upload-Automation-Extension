@@ -2,7 +2,7 @@
 
 import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
 import { autofillOnSite } from "../services/autofill.js";
-import { clearPickerCache } from "../services/folderCache.js";
+import { clearPickerCache } from "../services/caching.js";
 
 /**
  * Wrap any async function whose first arg is `accessToken`,
