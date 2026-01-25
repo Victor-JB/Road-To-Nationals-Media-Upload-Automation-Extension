@@ -117,7 +117,7 @@ export async function getAccessToken(interactive = true) {
 	const CLIENT_ID =
 		"1074281984090-u48kuhvpr07has1i5s0tvru2qi790f2p.apps.googleusercontent.com";
 	const SCOPES = [
-		"https://www.googleapis.com/auth/drive.readonly",
+		"https://www.googleapis.com/auth/drive.file",
 		"https://www.googleapis.com/auth/youtube.force-ssl",
 	].join(" ");
 

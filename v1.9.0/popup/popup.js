@@ -6,11 +6,11 @@ import {
 	listFoldersInDriveWithCache,
 } from "../services/driveApi.js";
 import {
-    cacheCurrentVideos,
-    getCachedVideos,
-    cacheFormState,
-    getCachedFormState,
-    clearAllCaches
+	cacheCurrentVideos,
+	getCachedVideos,
+	cacheFormState,
+	getCachedFormState,
+	clearAllCaches,
 } from "../services/folderCache.js";
 import {
 	uploadToYouTubeWithAutoReauth,
@@ -53,14 +53,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 					renderFolderList(allFolders, token);
 				}
 
-                // Check for cached videos content to restore state
-                const cachedVideosData = await getCachedVideos();
-                if (cachedVideosData) {
-                    const { videos, folderName } = cachedVideosData;
-                    const savedFormState = await getCachedFormState();
-                    renderVideoList(videos, token, folderName, savedFormState);
-                }
-
+				// Check for cached videos content to restore state
+				const cachedVideosData = await getCachedVideos();
+				if (cachedVideosData) {
+					const { videos, folderName } = cachedVideosData;
+					const savedFormState = await getCachedFormState();
+					renderVideoList(videos, token, folderName, savedFormState);
+				}
 			} catch (err) {
 				console.log("No valid cache or load failed (silent)", err);
 			}
@@ -79,8 +78,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 		}
 
 		try {
-            // Clear existing caches on explicit refresh to ensure fresh data
-            await clearAllCaches();
+			// Clear existing caches on explicit refresh to ensure fresh data
+			await clearAllCaches();
 			allFolders = await listFoldersInDriveWithCacheAndAutoReauth(token, true);
 			renderFolderList(allFolders, token);
 		} catch (err) {
@@ -237,8 +236,8 @@ function renderFolderList(folders, token) {
 					folder.id
 				);
 
-                // Cache the fresh video list
-                await cacheCurrentVideos(videos, folder.name);
+				// Cache the fresh video list
+				await cacheCurrentVideos(videos, folder.name);
 
 				// grab whatever token is now current (auto-reauth may have refreshed it)
 				const freshToken = (await getAccessToken(false)) || finalToken;
@@ -277,8 +276,8 @@ function renderFolderList(folders, token) {
 					folder.id
 				);
 
-                // Cache the fresh video list
-                await cacheCurrentVideos(videos, folder.name);
+				// Cache the fresh video list
+				await cacheCurrentVideos(videos, folder.name);
 
 				// grab whatever token is now current (auto-reauth may have refreshed it)
 				const freshToken = (await getAccessToken(false)) || finalToken;
@@ -316,29 +315,29 @@ function renderVideoList(videos, accessToken, folderName, savedState = null) {
 		return;
 	}
 
-    // Helper to save current form state to cache
-    const persistState = () => {
-        const state = {};
-        // Iterate over currentVideos to find their inputs
-        currentVideos.forEach((vid, idx) => {
-             // We can find the inputs by traversing the DOM or by ID if we set one.
-             // Since we rebuild the list, we can rely on order matching if we are careful,
-             // but using the file ID in the dataset is safer.
-             const li = videoListElem.children[idx]; // roughly corresponds if list matches
-             if (!li) return;
-             
-             const nameInput = li.querySelector(".nameEventInput");
-             const scoreInput = li.querySelector(".scoreInput");
-             
-             if (nameInput || scoreInput) {
-                 state[vid.id] = {
-                     name: nameInput ? nameInput.value : "",
-                     score: scoreInput ? scoreInput.value : ""
-                 };
-             }
-        });
-        cacheFormState(state);
-    };
+	// Helper to save current form state to cache
+	const persistState = () => {
+		const state = {};
+		// Iterate over currentVideos to find their inputs
+		currentVideos.forEach((vid, idx) => {
+			// We can find the inputs by traversing the DOM or by ID if we set one.
+			// Since we rebuild the list, we can rely on order matching if we are careful,
+			// but using the file ID in the dataset is safer.
+			const li = videoListElem.children[idx]; // roughly corresponds if list matches
+			if (!li) return;
+
+			const nameInput = li.querySelector(".nameEventInput");
+			const scoreInput = li.querySelector(".scoreInput");
+
+			if (nameInput || scoreInput) {
+				state[vid.id] = {
+					name: nameInput ? nameInput.value : "",
+					score: scoreInput ? scoreInput.value : "",
+				};
+			}
+		});
+		cacheFormState(state);
+	};
 
 	videos.forEach((file) => {
 		// lastIndexOf('.') returns -1 if no dot is found ⇢ slice(0, -0) ⇒ full name unchanged
@@ -348,7 +347,7 @@ function renderVideoList(videos, accessToken, folderName, savedState = null) {
 
 		const li = document.createElement("li");
 		li.className = "videoItem";
-        li.dataset.id = file.id; // Mark the LI with ID for easier lookup via DOM if needed
+		li.dataset.id = file.id; // Mark the LI with ID for easier lookup via DOM if needed
 
 		/* --- NEW: Stack container for Preview + Name --- */
 		const infoStack = document.createElement("div");
@@ -461,15 +460,16 @@ function renderVideoList(videos, accessToken, folderName, savedState = null) {
 		scoreInput.className = "scoreInput";
 		inputStack.appendChild(scoreInput);
 
-        // Restore state if available
-        if (savedState && savedState[file.id]) {
-            if (savedState[file.id].name) nameEvt.value = savedState[file.id].name;
-            if (savedState[file.id].score) scoreInput.value = savedState[file.id].score;
-        }
+		// Restore state if available
+		if (savedState && savedState[file.id]) {
+			if (savedState[file.id].name) nameEvt.value = savedState[file.id].name;
+			if (savedState[file.id].score)
+				scoreInput.value = savedState[file.id].score;
+		}
 
-        // Add listeners to persist state on change
-        nameEvt.addEventListener("input", persistState);
-        scoreInput.addEventListener("input", persistState);
+		// Add listeners to persist state on change
+		nameEvt.addEventListener("input", persistState);
+		scoreInput.addEventListener("input", persistState);
 
 		li.appendChild(inputStack);
 		// ----------------------------
