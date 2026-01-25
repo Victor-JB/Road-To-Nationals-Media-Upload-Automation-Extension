@@ -1,5 +1,6 @@
 
 High:
+0. An X out button top right
 1. HAVE THE FOLDERS PERSIST, NOT A BAJILLION API CALLS TO DO SO
 3. create example usage, so people know how it works
  - specifically for how the naming works, and how managers can either rename the videos or use the builtin forms to rename the videos
@@ -19,8 +20,6 @@ high priority:
 3. PARELLEL UPLOADS--upload multiple videos at once for mass upload
 4. better progress bar, with blobs so that video progress is tracked
 Upload all of these safeguardand performance enhancers before releasing next version to puboic
-
-2. add loading icon for refresh folders
 
 1. drop down of team members who are added, so user doesn't have to reinput video name every time, can just 
 put in initial template

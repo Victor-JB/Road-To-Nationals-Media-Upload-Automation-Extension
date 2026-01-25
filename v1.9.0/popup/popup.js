@@ -20,35 +20,11 @@ import { showUploadStatus, updateHistoryList } from "../utils/utils.js";
 // We'll store the currently displayed videos, so we can mass-upload them
 let currentVideos = [];
 
-const PICKER_ORIGIN = new URL(chrome.runtime.getURL("popup/picker.html"))
-	.origin;
-
 // -------------------------------------------------------------------------- //
 document.addEventListener("DOMContentLoaded", async () => {
 	const openPickerBtn = document.getElementById("openPickerBtn");
-	const pickerIframe = document.getElementById("pickerIframe");
 	const uploadAllBtn = document.getElementById("uploadAllButton");
 	const container = document.getElementById("persistedContainer");
-
-	const ensurePickerFrameReady = () =>
-		new Promise((resolve) => {
-			if (pickerIframe.contentWindow) {
-				return resolve(pickerIframe.contentWindow);
-			}
-			pickerIframe.addEventListener(
-				"load",
-				() => resolve(pickerIframe.contentWindow),
-				{ once: true }
-			);
-		});
-
-	const hidePicker = () => {
-		pickerIframe.style.display = "none";
-	};
-
-	const showPicker = () => {
-		pickerIframe.style.display = "block";
-	};
 
 	// Restore cached selection on load (non-interactive to avoid auth prompts)
 	(async function hydrateFromCache() {
@@ -67,10 +43,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 		}
 	})();
 
+	// Listen for picker results from the background script
+	chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+		if (message.type === "pickerResult") {
+			handlePickerSelection(message.docs);
+		}
+	});
+
 	openPickerBtn.addEventListener("click", async () => {
-		let pickerConfig;
 		try {
-			pickerConfig = resolvePickerConfig();
+			resolvePickerConfig(); // Validate config exists
 		} catch (configError) {
 			alert(configError.message);
 			return;
@@ -82,25 +64,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 			return;
 		}
 
-		showPicker();
-		const frameWindow = await ensurePickerFrameReady();
-		frameWindow.postMessage(
-			{ type: "init", token, config: pickerConfig },
-			PICKER_ORIGIN
+		// Open picker in a new popup window
+		const pickerUrl = chrome.runtime.getURL(
+			`popup/pickerWindow.html?token=${encodeURIComponent(token)}`
 		);
-	});
-
-	window.addEventListener("message", async (event) => {
-		if (event.origin !== PICKER_ORIGIN) return;
-		if (event.source !== pickerIframe.contentWindow) return;
-		const { type, docs } = event.data || {};
-
-		if (type === "picked") {
-			hidePicker();
-			await handlePickerSelection(docs);
-		} else if (type === "cancel") {
-			hidePicker();
-		}
+		window.open(
+			pickerUrl,
+			"drivePicker",
+			"width=900,height=600,menubar=no,toolbar=no,location=no,status=no"
+		);
 	});
 
 	async function handlePickerSelection(docs) {
