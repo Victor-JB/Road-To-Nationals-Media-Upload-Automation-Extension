@@ -1,7 +1,6 @@
 // popup.js
 import { getAccessToken } from "../background/oauth.js";
 import {
-	listFoldersInDriveWithAutoReauth,
 	listVideosInFolderWithAutoReauth,
 	listFoldersInDriveWithCacheAndAutoReauth,
 	listFoldersInDriveWithCache,
@@ -219,7 +218,11 @@ function renderFolderList(folders, token) {
 					finalToken,
 					folder.id
 				);
-				renderVideoList(videos, finalToken, folder.name);
+
+				// grab whatever token is now current (auto-reauth may have refreshed it)
+				const freshToken = (await getAccessToken(false)) || finalToken;
+
+				renderVideoList(videos, freshToken, folder.name);
 			} catch (error) {
 				console.error("Error listing videos:", error);
 			}
@@ -252,7 +255,11 @@ function renderFolderList(folders, token) {
 					finalToken,
 					folder.id
 				);
-				renderVideoList(videos, finalToken, folder.name);
+
+				// grab whatever token is now current (auto-reauth may have refreshed it)
+				const freshToken = (await getAccessToken(false)) || finalToken;
+
+				renderVideoList(videos, freshToken, folder.name);
 			} catch (error) {
 				console.error("Error listing videos:", error);
 			}
@@ -290,7 +297,11 @@ function renderVideoList(videos, accessToken, folderName) {
 		const li = document.createElement("li");
 		li.className = "videoItem";
 
-		// -- NEW: Video Preview Block --
+		/* --- NEW: Stack container for Preview + Name --- */
+		const infoStack = document.createElement("div");
+		infoStack.className = "video-info-stack";
+
+		// -- Link Video Preview Block --
 		const previewWrapper = document.createElement("div");
 		previewWrapper.className = "video-preview-wrapper";
 
@@ -336,7 +347,11 @@ function renderVideoList(videos, accessToken, folderName) {
 				previewWrapper.appendChild(videoEl);
 
 				// keep your current src approach for now
-				videoEl.src = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&access_token=${accessToken}`;
+				videoEl.src = `https://www.googleapis.com/drive/v3/files/${
+					file.id
+				}?alt=media&access_token=&access_token=${encodeURIComponent(
+					accessToken
+				)}`;
 				videoEl.load(); // ensure fetch starts
 			} else {
 				videoEl.style.display = "block";
@@ -366,13 +381,16 @@ function renderVideoList(videos, accessToken, folderName) {
 			videoEl.style.display = "none";
 		});
 
-		li.appendChild(previewWrapper);
+		infoStack.appendChild(previewWrapper);
 		// -- End Video Preview Block --
 
 		const nameSpan = document.createElement("span");
 		nameSpan.className = "video-name";
-		nameSpan.textContent = `${file.name} (${file.mimeType})`;
-		li.appendChild(nameSpan);
+		nameSpan.textContent = file.name; // Short name for the stack
+		nameSpan.title = file.name; // Full name on hover
+		infoStack.appendChild(nameSpan);
+
+		li.appendChild(infoStack);
 
 		// creating name + event input
 		const nameEvt = document.createElement("input");
