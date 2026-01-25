@@ -390,19 +390,26 @@ function renderVideoList(videos, accessToken, folderName) {
 
 		li.appendChild(infoStack);
 
+		// -- NEW: Input Stack Block --
+		const inputStack = document.createElement("div");
+		inputStack.className = "input-stack";
+
 		// creating name + event input
 		const nameEvt = document.createElement("input");
 		nameEvt.type = "text";
 		nameEvt.placeholder = "Athlete & event (optional)…";
 		nameEvt.className = "nameEventInput";
-		li.appendChild(nameEvt);
+		inputStack.appendChild(nameEvt);
 
 		// creating score input
 		const scoreInput = document.createElement("input");
 		scoreInput.type = "text";
 		scoreInput.placeholder = "Score (optional)";
 		scoreInput.className = "scoreInput";
-		li.appendChild(scoreInput);
+		inputStack.appendChild(scoreInput);
+
+		li.appendChild(inputStack);
+		// ----------------------------
 
 		// Existing single upload
 		const uploadBtn = document.createElement("button");

@@ -1,14 +1,14 @@
 /* Video Preview Container */
 .video-preview-wrapper {
 	position: relative;
-	width: 72px; /* 16:9 aspect ratio relative to ~40px height */
-	height: 40px;
+	width: 128px; /* Larger 16:9 aspect ratio */
+	height: 72px;
 	background-color: #000;
 	border-radius: 4px;
 	overflow: hidden;
 	flex-shrink: 0;
 	cursor: ew-resize; /* Indicates scrubbing is possible */
-	margin-right: 8px; /* Spacing from name */
+	margin-right: 0; /* Spacing handled by stack */
 }
 
 /* Thumbnail Image - Shown by default */

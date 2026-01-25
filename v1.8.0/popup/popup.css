@@ -287,12 +287,10 @@ header {
 	justify-content: center;
 	align-items: center;
 	gap: 4px;
-	width: 85px; /* Slightly wider than the 72px preview */
+	width: 140px; /* Slightly wider than the 128px preview */
 	flex-shrink: 0;
 	margin-right: 8px;
-}
-
-/* Adjust video name when inside the stack */
+} /* Adjust video name when inside the stack */
 .video-info-stack .video-name {
 	font-size: 0.7rem;
 	text-align: center;
@@ -307,14 +305,24 @@ header {
 }
 
 /* score input */
-.scoreInput {
+.scoreInput .nameEventInput {
 	width: 115px;
 	padding: 4px;
 }
 
-.nameEventInput {
-	flex: 1 1 180px;
-	max-width: 220px;
+/* --- NEW: Input Stack for Name/Score --- */
+.input-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	flex: 1; /* Take remaining width */
+	min-width: 0;
+}
+
+/* Make inputs fill the stack */
+.input-stack input[type="text"] {
+	width: 100%;
+	box-sizing: border-box; /* Include padding in width */
 }
 
 /* ------------------------------
