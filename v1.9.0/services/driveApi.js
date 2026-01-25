@@ -5,57 +5,30 @@ import { cacheFolders, getCachedFolders } from "./folderCache.js";
 
 // -------------------------------------------------------------------------- //
 /**
- * Basic function to list all folders in Drive. May throw an error with .status on failure.
+ * DEPRECATED: With `drive.file` scope, we cannot list all folders.
+ * Access is restricted to files selected by the user via Picker.
  */
+/*
 export async function listFoldersInDrive(accessToken) {
-	const query = encodeURIComponent(
-		"mimeType='application/vnd.google-apps.folder' and trashed=false"
-	);
-	const fields = encodeURIComponent("files(id,name)");
-	const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}`;
-
-	const response = await fetch(url, {
-		headers: { Authorization: `Bearer ${accessToken}` },
-	});
-
-	if (!response.ok) {
-		const err = new Error(`Failed to list folders: ${response.status}`);
-		err.status = response.status;
-		throw err;
-	}
-
-	const data = await response.json();
-	return data.files || [];
+	// ... implementation removed for safety ...
+    return [];
 }
+*/
 
 // -------------------------------------------------------------------------- //
 /**
- * Enhanced function that checks cache first, then fetches from API if needed
- * @param {string} accessToken - OAuth token
- * @param {boolean} forceRefresh - If true, bypasses cache and fetches fresh data
- * @returns {Promise<Array>} - Array of folder objects
+ * DEPRECATED: See listFoldersInDrive
  */
 export async function listFoldersInDriveWithCache(
 	accessToken,
 	forceRefresh = false
 ) {
-	// Check cache first unless force refresh is requested
-	if (!forceRefresh) {
-		const cachedFolders = await getCachedFolders();
-		if (cachedFolders) {
-			return cachedFolders;
-		}
-	}
-
-	// Fetch fresh data from API
-	console.log("Fetching fresh folder data from Drive API...");
-	const folders = await listFoldersInDrive(accessToken);
-
-	// Cache the results
-	await cacheFolders(folders);
-
-	return folders;
+    console.warn("listFoldersInDriveWithCache called but is deprecated.");
+	return [];
 }
+
+export const listFoldersInDriveWithCacheAndAutoReauth = (token, refresh) => listFoldersInDriveWithCache(token, refresh);
+
 
 // -------------------------------------------------------------------------- //
 /**
