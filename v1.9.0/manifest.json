@@ -34,7 +34,7 @@
   },
   "sandbox": {
     "pages": [
-      "picker.html"
+      "popup/picker.html"
     ]
   }
 }

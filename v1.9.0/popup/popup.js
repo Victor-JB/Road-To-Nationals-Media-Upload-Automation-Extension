@@ -1,16 +1,12 @@
 // popup.js
 import { getAccessToken } from "../background/oauth.js";
-import {
-	listVideosInFolderWithAutoReauth,
-	listFoldersInDriveWithCacheAndAutoReauth,
-	listFoldersInDriveWithCache,
-} from "../services/driveApi.js";
+import { PICKER_CONFIG } from "./pickerConfig.js";
+import { listVideosInFolderWithAutoReauth } from "../services/driveApi.js";
 import {
 	cacheCurrentVideos,
 	getCachedVideos,
 	cacheFormState,
 	getCachedFormState,
-	clearAllCaches,
 } from "../services/folderCache.js";
 import {
 	uploadToYouTubeWithAutoReauth,
@@ -21,139 +17,139 @@ import {
 import { autofillOnSite } from "../services/autofill.js";
 import { showUploadStatus, updateHistoryList } from "../utils/utils.js";
 
-// We'll store the fetched folders in this array for searching
-let allFolders = [];
-
 // We'll store the currently displayed videos, so we can mass-upload them
 let currentVideos = [];
 
-// This is used for the drag-to-resize logic at bottom of file
-let isDragging = false;
-
-const divider = document.getElementById("divider");
-const foldersSection = document.getElementById("foldersSection");
-const videosSection = document.getElementById("videosSection");
+const PICKER_ORIGIN = new URL(chrome.runtime.getURL("popup/picker.html"))
+	.origin;
 
 // -------------------------------------------------------------------------- //
 document.addEventListener("DOMContentLoaded", async () => {
 	const openPickerBtn = document.getElementById("openPickerBtn");
 	const pickerIframe = document.getElementById("pickerIframe");
-	// const folderSearchInput = document.getElementById("folderSearch"); // Removed
 	const uploadAllBtn = document.getElementById("uploadAllButton");
 	const container = document.getElementById("persistedContainer");
 
-	// Hide resizing panel for folders initially since we don't list folders
-	foldersSection.style.display = "none";
-	divider.style.display = "none";
-
-	// Initial load of folders from cache
-	(async function initialLoad() {
-		// Use interactive=false to prevent popup loops on load
-		const token = await getAccessToken(false);
-		if (token) {
-			try {
-				// We no longer list all folders automatically.
-				// Instead, we just check for cached video state.
-
-				// Check for cached videos content to restore state
-				const cachedVideosData = await getCachedVideos();
-				if (cachedVideosData) {
-					const { videos, folderName } = cachedVideosData;
-					const savedFormState = await getCachedFormState();
-					renderVideoList(videos, token, folderName, savedFormState);
-				}
-			} catch (err) {
-				console.log("No valid cache or load failed (silent)", err);
+	const ensurePickerFrameReady = () =>
+		new Promise((resolve) => {
+			if (pickerIframe.contentWindow) {
+				return resolve(pickerIframe.contentWindow);
 			}
-		} else {
-			console.log("No valid token on init - waiting for user refresh.");
+			pickerIframe.addEventListener(
+				"load",
+				() => resolve(pickerIframe.contentWindow),
+				{ once: true }
+			);
+		});
+
+	const hidePicker = () => {
+		pickerIframe.style.display = "none";
+	};
+
+	const showPicker = () => {
+		pickerIframe.style.display = "block";
+	};
+
+	// Restore cached selection on load (non-interactive to avoid auth prompts)
+	(async function hydrateFromCache() {
+		const token = await getAccessToken(false);
+		if (!token) return;
+
+		try {
+			const cachedVideosData = await getCachedVideos();
+			if (cachedVideosData) {
+				const { videos, folderName } = cachedVideosData;
+				const savedFormState = await getCachedFormState();
+				renderVideoList(videos, token, folderName, savedFormState);
+			}
+		} catch (error) {
+			console.warn("Failed to hydrate from cache", error);
 		}
 	})();
 
-	// == Open Picker Button == //
 	openPickerBtn.addEventListener("click", async () => {
-		const token = await getAccessToken();
-		if (!token) {
-			console.error("Failed to retrieve token!");
+		let pickerConfig;
+		try {
+			pickerConfig = resolvePickerConfig();
+		} catch (configError) {
+			alert(configError.message);
 			return;
 		}
 
-		// Show the picker iframe
-		pickerIframe.style.display = "block";
-		// Send init message
-		// wait slightly for iframe to be ready if it wasn't
-		// But iframe src is loaded on DOMContentLoaded.
-		pickerIframe.contentWindow.postMessage({ type: "init", token: token }, "*");
+		const token = await getAccessToken();
+		if (!token) {
+			alert("Unable to authenticate with Google Drive.");
+			return;
+		}
+
+		showPicker();
+		const frameWindow = await ensurePickerFrameReady();
+		frameWindow.postMessage(
+			{ type: "init", token, config: pickerConfig },
+			PICKER_ORIGIN
+		);
 	});
 
-	// == Message Listener for Picker == //
 	window.addEventListener("message", async (event) => {
-		// Important: Verify origin if possible, but sandboxed iframe usually has null origin or specific
-		if (event.data.type === "picked") {
-			pickerIframe.style.display = "none";
-			const docs = event.data.docs;
+		if (event.origin !== PICKER_ORIGIN) return;
+		if (event.source !== pickerIframe.contentWindow) return;
+		const { type, docs } = event.data || {};
+
+		if (type === "picked") {
+			hidePicker();
 			await handlePickerSelection(docs);
-		} else if (event.data.type === "cancel") {
-			pickerIframe.style.display = "none";
+		} else if (type === "cancel") {
+			hidePicker();
 		}
 	});
 
-	/**
-	 * Handles the selection from Google Picker
-	 * @param {Array} docs - Array of selected documents
-	 */
 	async function handlePickerSelection(docs) {
-		if (!docs || docs.length === 0) return;
+		if (!Array.isArray(docs) || docs.length === 0) {
+			return;
+		}
 
 		const token = await getAccessToken();
-		const firstDoc = docs[0];
+		if (!token) {
+			alert("Authentication expired. Please try again.");
+			return;
+		}
 
-		// Check mimeType to see if it's a folder
-		if (firstDoc.mimeType === "application/vnd.google-apps.folder") {
-			// User picked a folder
+		const firstDoc = docs[0];
+		const isFolder = firstDoc.mimeType === "application/vnd.google-apps.folder";
+
+		if (isFolder) {
 			try {
-				// We reuse listVideosInFolderWithAutoReauth logic
-				// The doc.id is the folder ID.
 				const videos = await listVideosInFolderWithAutoReauth(
 					token,
 					firstDoc.id
 				);
-
-				// Cache it
 				await cacheCurrentVideos(videos, firstDoc.name);
-
-				// Render it
 				renderVideoList(videos, token, firstDoc.name);
-			} catch (err) {
-				console.error("Error listing videos from picked folder:", err);
-				alert("Failed to list videos from the selected folder.");
+			} catch (error) {
+				console.error("Error listing folder via picker", error);
+				alert("Unable to enumerate the selected folder.");
 			}
-		} else {
-			// User picked files.
-			// We need to format them into the structure expected by renderVideoList.
-			// Expected: { id, name, mimeType, thumbnailLink }
-			// The picker returns { id, name, mimeType, iconUrl, url, ... }
-			// Picker usually returns 'iconUrl', not 'thumbnailLink'.
-			// 'thumbnailLink' is from Drive API list.
-			// However, we can use the docs array directly, mapping fields if needed.
-
-			// Filter only videos just in case
-			const validVideos = docs.filter((d) => d.mimeType.startsWith("video/"));
-
-			const formattedVideos = validVideos.map((d) => ({
-				id: d.id,
-				name: d.name,
-				mimeType: d.mimeType,
-				thumbnailLink: d.iconUrl, // Use icon as fallback or try to fetch if critical
-			}));
-
-			if (formattedVideos.length > 0) {
-				await cacheCurrentVideos(formattedVideos, "Selected Files");
-				renderVideoList(formattedVideos, token, "Selected Files");
-			} else {
-				alert("No video files were selected.");
-			}
+			return;
 		}
+
+		const validVideos = docs.filter((doc) =>
+			doc.mimeType && doc.mimeType.startsWith("video/")
+		);
+
+		const formattedVideos = validVideos.map((doc) => ({
+			id: doc.id,
+			name: doc.name,
+			mimeType: doc.mimeType,
+			thumbnailLink: doc.iconUrl,
+		}));
+
+		if (!formattedVideos.length) {
+			alert("No supported video files were selected.");
+			return;
+		}
+
+		await cacheCurrentVideos(formattedVideos, "Selected Files");
+		renderVideoList(formattedVideos, token, "Selected Files");
 	}
 
 	const videoData = await getStoredVideoIDs();
@@ -255,104 +251,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		}
 	});
 
-	// Set initial heights for resizing logic
-	const resizablePanel = document.getElementById("resizablePanel");
-
-	const totalHeight = resizablePanel.clientHeight;
-	const defaultRatio = 0.5; // 50/50 split to start
-
-	foldersSection.style.flexBasis = `${totalHeight * defaultRatio}px`;
-	videosSection.style.flexBasis = `${totalHeight * (1 - defaultRatio) - 6}px`; // minus divider height
 });
-
-// -------------------------------------------------------------------------- //
-/**
- * Renders the folder list. "Show Videos" calls listVideosInFolderWithAutoReauth.
- */
-function renderFolderList(folders, token) {
-	const folderListElem = document.getElementById("folderList");
-	folderListElem.innerHTML = "";
-
-	if (!folders.length) {
-		folderListElem.textContent = "No folders found.";
-		return;
-	}
-
-	folders.forEach((folder) => {
-		const li = document.createElement("li");
-		li.className = "folderItem";
-
-		// adding click handler for entire folder box
-		li.addEventListener("click", async () => {
-			li.classList.add("selected");
-			let finalToken = token;
-			if (!finalToken) {
-				finalToken = await getAccessToken();
-				if (!finalToken) return;
-			}
-			try {
-				const videos = await listVideosInFolderWithAutoReauth(
-					finalToken,
-					folder.id
-				);
-
-				// Cache the fresh video list
-				await cacheCurrentVideos(videos, folder.name);
-
-				// grab whatever token is now current (auto-reauth may have refreshed it)
-				const freshToken = (await getAccessToken(false)) || finalToken;
-
-				renderVideoList(videos, freshToken, folder.name);
-			} catch (error) {
-				console.error("Error listing videos:", error);
-			}
-			li.classList.remove("selected");
-		});
-
-		// Folder icon
-		const icon = document.createElement("img");
-		icon.src = "../icons/folder.png";
-		li.appendChild(icon);
-
-		// Folder name
-		const nameSpan = document.createElement("span");
-		nameSpan.textContent = folder.name;
-		li.appendChild(nameSpan);
-
-		// "Show Videos" button
-		const showBtn = document.createElement("button");
-		showBtn.textContent = "Show Videos";
-		showBtn.addEventListener("click", async (e) => {
-			e.stopPropagation(); // prevent bubbling to parent
-			li.classList.add("selected");
-			let finalToken = token;
-			if (!finalToken) {
-				finalToken = await getAccessToken();
-				if (!finalToken) return;
-			}
-			try {
-				const videos = await listVideosInFolderWithAutoReauth(
-					finalToken,
-					folder.id
-				);
-
-				// Cache the fresh video list
-				await cacheCurrentVideos(videos, folder.name);
-
-				// grab whatever token is now current (auto-reauth may have refreshed it)
-				const freshToken = (await getAccessToken(false)) || finalToken;
-
-				renderVideoList(videos, freshToken, folder.name);
-			} catch (error) {
-				console.error("Error listing videos:", error);
-			}
-			li.classList.remove("selected");
-		});
-
-		li.appendChild(showBtn);
-		folderListElem.appendChild(li);
-	});
-}
 
 // -------------------------------------------------------------------------- //
 /**
@@ -603,32 +502,18 @@ function renderVideoList(videos, accessToken, folderName, savedState = null) {
 	});
 }
 
-// -------------------------------------------------------------------------- //
-/*
-  Logic for resizing the folder and video sections
-  This is a simple drag-to-resize implementation.
-*/
+function resolvePickerConfig() {
+	const { developerKey, appId } = PICKER_CONFIG ?? {};
+	if (!developerKey || developerKey.startsWith("__REPLACE")) {
+		throw new Error(
+			"Google Picker API key is missing. Update popup/pickerConfig.js before continuing."
+		);
+	}
+	if (!appId || appId.startsWith("__REPLACE")) {
+		throw new Error(
+			"Google Cloud project number (appId) is missing. Update popup/pickerConfig.js."
+		);
+	}
+	return { developerKey, appId };
+}
 
-let startY = 0;
-let startHeight = 0;
-
-divider.addEventListener("mousedown", (e) => {
-	isDragging = true;
-	startY = e.clientY;
-	startHeight = foldersSection.offsetHeight;
-	document.body.style.userSelect = "none"; // prevent text selection
-});
-
-document.addEventListener("mousemove", (e) => {
-	if (!isDragging) return;
-	const dy = e.clientY - startY;
-	let newHeight = startHeight + dy;
-	newHeight = Math.max(60, Math.min(300, newHeight)); // clamp between 60–300 px
-	foldersSection.style.height = `${newHeight}px`;
-	foldersSection.style.flex = `0 0 ${newHeight}px`; // force fixed height
-});
-
-document.addEventListener("mouseup", () => {
-	isDragging = false;
-	document.body.style.userSelect = "";
-});

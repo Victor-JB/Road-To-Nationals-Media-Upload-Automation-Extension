@@ -1,34 +1,6 @@
 // driveApi.js
 
 import { withAutoReauth } from "../utils/utils.js";
-import { cacheFolders, getCachedFolders } from "./folderCache.js";
-
-// -------------------------------------------------------------------------- //
-/**
- * DEPRECATED: With `drive.file` scope, we cannot list all folders.
- * Access is restricted to files selected by the user via Picker.
- */
-/*
-export async function listFoldersInDrive(accessToken) {
-	// ... implementation removed for safety ...
-    return [];
-}
-*/
-
-// -------------------------------------------------------------------------- //
-/**
- * DEPRECATED: See listFoldersInDrive
- */
-export async function listFoldersInDriveWithCache(
-	accessToken,
-	forceRefresh = false
-) {
-	console.warn("listFoldersInDriveWithCache called but is deprecated.");
-	return [];
-}
-
-export const listFoldersInDriveWithCacheAndAutoReauth = (token, refresh) =>
-	listFoldersInDriveWithCache(token, refresh);
 
 // -------------------------------------------------------------------------- //
 /**
@@ -87,12 +59,5 @@ export async function listVideosInFolder(accessToken, folderId) {
 	return allVideos;
 }
 
-export const listFoldersInDriveWithAutoReauth =
-	withAutoReauth(listFoldersInDrive);
 export const listVideosInFolderWithAutoReauth =
 	withAutoReauth(listVideosInFolder);
-
-// New cached version with auto-reauth
-export const listFoldersInDriveWithCacheAndAutoReauth = withAutoReauth(
-	listFoldersInDriveWithCache
-);

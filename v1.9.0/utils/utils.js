@@ -2,7 +2,7 @@
 
 import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
 import { autofillOnSite } from "../services/autofill.js";
-import { clearFoldersCache, getCacheInfo } from "../services/folderCache.js";
+import { clearPickerCache } from "../services/folderCache.js";
 
 /**
  * Wrap any async function whose first arg is `accessToken`,
@@ -42,7 +42,7 @@ export function withAutoReauth(fn) {
  */
 export async function clearAllCache() {
 	try {
-		await clearFoldersCache();
+		await clearPickerCache();
 		// Updated to clear expiry as well
 		await chromeStorageRemove(["accessToken", "tokenExpiry"]);
 		console.log("All cache cleared successfully");
@@ -50,30 +50,6 @@ export async function clearAllCache() {
 		console.error("Failed to clear cache:", error);
 		throw error;
 	}
-}
-
-// -------------------------------------------------------------------------- //
-/**
- * Displays cache status in the UI (for debugging/user info)
- * @param {string} containerId - ID of element to display cache info
- */
-export async function displayCacheStatus(containerId) {
-	const cacheInfo = await getCacheInfo();
-	const container = document.getElementById(containerId);
-
-	if (!container) return;
-
-	let statusText = "";
-	if (cacheInfo.hasCache && !cacheInfo.isExpired) {
-		const minutesLeft = Math.ceil(cacheInfo.timeUntilExpiry / 60000);
-		statusText = `📁 ${cacheInfo.itemCount} folders cached (expires in ${minutesLeft}m)`;
-	} else if (cacheInfo.hasCache && cacheInfo.isExpired) {
-		statusText = `📁 Cache expired (${cacheInfo.itemCount} items)`;
-	} else {
-		statusText = "📁 No cached data";
-	}
-
-	container.textContent = statusText;
 }
 
 // -------------------------------------------------------------------------- //

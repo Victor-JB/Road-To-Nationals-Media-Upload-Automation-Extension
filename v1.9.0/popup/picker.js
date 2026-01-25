@@ -1,14 +1,8 @@
 // picker.js
 
-// Google Picker configuration
-const DEVELOPER_KEY = "AIzaSyBDHhKJoe9u5GG3bsUT-dYUoheXcPMnoQc";
-
-// IMPORTANT: This must be your Google Cloud Project Number (App ID), not OAuth client ID.
-// You said 1074281984090 is your Project Number.
-const APP_ID = "1074281984090";
-
 let oauthToken = null;
 let pickerApiLoaded = false;
+let pickerConfig = null;
 
 // In an extension page, this is "chrome-extension://<extension-id>"
 const EXTENSION_ORIGIN = window.location.origin;
@@ -27,7 +21,14 @@ window.addEventListener("message", (event) => {
 		return;
 	}
 
+	if (!isValidConfig(data.config)) {
+		document.getElementById("loading").textContent =
+			"Picker configuration missing. Update pickerConfig.js.";
+		return;
+	}
+
 	oauthToken = data.token;
+	pickerConfig = data.config;
 	maybeCreatePicker();
 });
 
@@ -53,7 +54,7 @@ function onPickerApiLoad() {
 
 // 3) Build the picker when both token + picker API are ready
 function maybeCreatePicker() {
-	if (!pickerApiLoaded || !oauthToken) return;
+	if (!pickerApiLoaded || !oauthToken || !pickerConfig) return;
 
 	const loadingEl = document.getElementById("loading");
 	if (loadingEl) loadingEl.style.display = "none";
@@ -65,8 +66,8 @@ function maybeCreatePicker() {
 		.setMimeTypes("video/mp4,video/quicktime,video/x-msvideo");
 
 	const picker = new google.picker.PickerBuilder()
-		.setAppId(APP_ID)
-		.setDeveloperKey(DEVELOPER_KEY)
+		.setAppId(pickerConfig.appId)
+		.setDeveloperKey(pickerConfig.developerKey)
 		.setOAuthToken(oauthToken)
 		.enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
 		// NAV_HIDDEN hides left nav; remove if you want normal navigation UI
@@ -90,6 +91,20 @@ function pickerCallback(data) {
 	} else if (action === google.picker.Action.CANCEL) {
 		window.parent.postMessage({ type: "cancel" }, EXTENSION_ORIGIN);
 	}
+}
+
+function isValidConfig(config) {
+	if (!config) return false;
+	const { developerKey, appId } = config;
+	if (typeof developerKey !== "string" || developerKey.length < 10) {
+		console.error("Developer key missing or invalid");
+		return false;
+	}
+	if (typeof appId !== "string" || !appId.trim()) {
+		console.error("App ID missing or invalid");
+		return false;
+	}
+	return true;
 }
 
 loadScript();
