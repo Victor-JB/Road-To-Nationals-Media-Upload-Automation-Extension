@@ -6,6 +6,13 @@ import {
 	listFoldersInDriveWithCache,
 } from "../services/driveApi.js";
 import {
+    cacheCurrentVideos,
+    getCachedVideos,
+    cacheFormState,
+    getCachedFormState,
+    clearAllCaches
+} from "../services/folderCache.js";
+import {
 	uploadToYouTubeWithAutoReauth,
 	massUploadAllVideosToPlaylist,
 	saveVideoIdsToStorage,
@@ -45,6 +52,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 				if (allFolders && allFolders.length) {
 					renderFolderList(allFolders, token);
 				}
+
+                // Check for cached videos content to restore state
+                const cachedVideosData = await getCachedVideos();
+                if (cachedVideosData) {
+                    const { videos, folderName } = cachedVideosData;
+                    const savedFormState = await getCachedFormState();
+                    renderVideoList(videos, token, folderName, savedFormState);
+                }
+
 			} catch (err) {
 				console.log("No valid cache or load failed (silent)", err);
 			}
@@ -63,6 +79,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 		}
 
 		try {
+            // Clear existing caches on explicit refresh to ensure fresh data
+            await clearAllCaches();
 			allFolders = await listFoldersInDriveWithCacheAndAutoReauth(token, true);
 			renderFolderList(allFolders, token);
 		} catch (err) {
@@ -219,6 +237,9 @@ function renderFolderList(folders, token) {
 					folder.id
 				);
 
+                // Cache the fresh video list
+                await cacheCurrentVideos(videos, folder.name);
+
 				// grab whatever token is now current (auto-reauth may have refreshed it)
 				const freshToken = (await getAccessToken(false)) || finalToken;
 
@@ -256,6 +277,9 @@ function renderFolderList(folders, token) {
 					folder.id
 				);
 
+                // Cache the fresh video list
+                await cacheCurrentVideos(videos, folder.name);
+
 				// grab whatever token is now current (auto-reauth may have refreshed it)
 				const freshToken = (await getAccessToken(false)) || finalToken;
 
@@ -275,8 +299,12 @@ function renderFolderList(folders, token) {
 /**
  * Renders a list of videos with "Upload to YouTube" buttons
  * and also updates currentVideos so we can mass-upload them.
+ * @param {Array} videos - List of video files
+ * @param {string} accessToken - Current auth token
+ * @param {string} folderName - Name of folder
+ * @param {Object} [savedState=null] - Optional map of fileId -> {name, score}
  */
-function renderVideoList(videos, accessToken, folderName) {
+function renderVideoList(videos, accessToken, folderName, savedState = null) {
 	const videoListElem = document.getElementById("videoList");
 	videoListElem.innerHTML = "";
 
@@ -288,6 +316,30 @@ function renderVideoList(videos, accessToken, folderName) {
 		return;
 	}
 
+    // Helper to save current form state to cache
+    const persistState = () => {
+        const state = {};
+        // Iterate over currentVideos to find their inputs
+        currentVideos.forEach((vid, idx) => {
+             // We can find the inputs by traversing the DOM or by ID if we set one.
+             // Since we rebuild the list, we can rely on order matching if we are careful,
+             // but using the file ID in the dataset is safer.
+             const li = videoListElem.children[idx]; // roughly corresponds if list matches
+             if (!li) return;
+             
+             const nameInput = li.querySelector(".nameEventInput");
+             const scoreInput = li.querySelector(".scoreInput");
+             
+             if (nameInput || scoreInput) {
+                 state[vid.id] = {
+                     name: nameInput ? nameInput.value : "",
+                     score: scoreInput ? scoreInput.value : ""
+                 };
+             }
+        });
+        cacheFormState(state);
+    };
+
 	videos.forEach((file) => {
 		// lastIndexOf('.') returns -1 if no dot is found ⇢ slice(0, -0) ⇒ full name unchanged
 		const baseName =
@@ -296,6 +348,7 @@ function renderVideoList(videos, accessToken, folderName) {
 
 		const li = document.createElement("li");
 		li.className = "videoItem";
+        li.dataset.id = file.id; // Mark the LI with ID for easier lookup via DOM if needed
 
 		/* --- NEW: Stack container for Preview + Name --- */
 		const infoStack = document.createElement("div");
@@ -407,6 +460,16 @@ function renderVideoList(videos, accessToken, folderName) {
 		scoreInput.placeholder = "Score (optional)";
 		scoreInput.className = "scoreInput";
 		inputStack.appendChild(scoreInput);
+
+        // Restore state if available
+        if (savedState && savedState[file.id]) {
+            if (savedState[file.id].name) nameEvt.value = savedState[file.id].name;
+            if (savedState[file.id].score) scoreInput.value = savedState[file.id].score;
+        }
+
+        // Add listeners to persist state on change
+        nameEvt.addEventListener("input", persistState);
+        scoreInput.addEventListener("input", persistState);
 
 		li.appendChild(inputStack);
 		// ----------------------------

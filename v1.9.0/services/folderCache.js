@@ -8,6 +8,8 @@ import {
 
 // Cache configuration
 const CACHE_KEY = "driveFoldersCache";
+const VIDEO_CACHE_KEY = "currentVideosCache";
+const FORM_CACHE_KEY = "videoFormStateCache";
 const CACHE_EXPIRY_KEY = "driveFoldersCacheExpiry";
 const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -61,15 +63,125 @@ export async function getCachedFolders() {
 
 // -------------------------------------------------------------------------- //
 /**
+ * Caches the current list of videos and folder name
+ * @param {Array} videos - Array of video objects
+ * @param {string} folderName - Name of the folder these videos belong to
+ */
+export async function cacheCurrentVideos(videos, folderName) {
+	try {
+        // We do NOT set a new expiry here; we respect the existing one
+        // or ensure one exists if for some reason it doesn't.
+        // But typically, folders are cached first, setting the global expiry.
+        // If folders aren't cached, start a fresh expiry window.
+        
+        let { [CACHE_EXPIRY_KEY]: expiryTime } = await chromeStorageGet([CACHE_EXPIRY_KEY]);
+        
+        if (!expiryTime || Date.now() > expiryTime) {
+            // Start a new session if none exists
+            expiryTime = Date.now() + CACHE_DURATION_MS;
+            await chromeStorageSet({ [CACHE_EXPIRY_KEY]: expiryTime });
+        }
+
+		await chromeStorageSet({
+			[VIDEO_CACHE_KEY]: {
+                videos,
+                folderName
+            }
+		});
+
+		console.log(`Cached ${videos.length} videos for folder "${folderName}"`);
+	} catch (error) {
+		console.error("Failed to cache videos:", error);
+	}
+}
+
+/**
+ * Retrieves cached videos if valid
+ * @returns {Object|null} - { videos, folderName } or null
+ */
+export async function getCachedVideos() {
+	try {
+		const {
+            [VIDEO_CACHE_KEY]: cachedData, 
+            [CACHE_EXPIRY_KEY]: expiryTime 
+        } = await chromeStorageGet([VIDEO_CACHE_KEY, CACHE_EXPIRY_KEY]);
+
+		if (!cachedData || !expiryTime || Date.now() > expiryTime) {
+			return null;
+		}
+
+		console.log(`Using cached videos for folder "${cachedData.folderName}"`);
+		return cachedData;
+	} catch (error) {
+		console.error("Failed to retrieve cached videos:", error);
+		return null;
+	}
+}
+
+// -------------------------------------------------------------------------- //
+/**
+ * Caches the form state (inputs) for the video list
+ * @param {Object} formState - Key-value pair of video index/id -> { score, name }
+ */
+export async function cacheFormState(formState) {
+    try {
+        // Just save the state; reliance on global expiry is checked on retrieve
+        await chromeStorageSet({ [FORM_CACHE_KEY]: formState });
+        // console.log("Form state cached", formState);
+    } catch (error) {
+        console.error("Failed to cache form state:", error);
+    }
+}
+
+/**
+ * Retrieves cached form state if valid
+ * @returns {Object|null} - The form state object or null
+ */
+export async function getCachedFormState() {
+    try {
+        const {
+            [FORM_CACHE_KEY]: formState,
+            [CACHE_EXPIRY_KEY]: expiryTime
+        } = await chromeStorageGet([FORM_CACHE_KEY, CACHE_EXPIRY_KEY]);
+
+        if (!formState || !expiryTime || Date.now() > expiryTime) {
+            return null;
+        }
+
+        return formState;
+    } catch (error) {
+        console.error("Failed to get cached form state:", error);
+        return null; // Return null on error so we don't break anything
+    }
+}
+
+// -------------------------------------------------------------------------- //
+/**
+ * Clears ALL caches (folders, videos, forms)
+ */
+export async function clearAllCaches() {
+	try {
+		await chromeStorageRemove([
+            CACHE_KEY, 
+            VIDEO_CACHE_KEY, 
+            FORM_CACHE_KEY, 
+            CACHE_EXPIRY_KEY
+        ]);
+		console.log("All caches cleared");
+	} catch (error) {
+		console.error("Failed to clear caches:", error);
+	}
+}
+
+/**
  * Clears the folders cache (useful for forced refresh or logout)
  */
 export async function clearFoldersCache() {
-	try {
-		await chromeStorageRemove([CACHE_KEY, CACHE_EXPIRY_KEY]);
-		console.log("Folders cache cleared");
-	} catch (error) {
-		console.error("Failed to clear folders cache:", error);
-	}
+    // Redirect to clearAllCaches to keep them in sync, 
+    // or keep separate if user only wants to refresh folders vs videos?
+    // User asked: "expire when the app token and folders expire, all at the same time"
+    // So clearing one should probably clear all to avoid mismatched states.
+    return clearAllCaches();
 }
 
 // -------------------------------------------------------------------------- //
