@@ -1,6 +1,8 @@
 
 High:
 0. An X out button top right
+0.5 Before user starts loading folders, you can have screen where person can enter their roster
+then it will be dropdown for the person to click and enter the name
 1. HAVE THE FOLDERS PERSIST, NOT A BAJILLION API CALLS TO DO SO
 3. create example usage, so people know how it works
  - specifically for how the naming works, and how managers can either rename the videos or use the builtin forms to rename the videos
