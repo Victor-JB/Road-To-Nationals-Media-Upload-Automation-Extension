@@ -4,6 +4,7 @@ import {
 	listFoldersInDriveWithAutoReauth,
 	listVideosInFolderWithAutoReauth,
 	listFoldersInDriveWithCacheAndAutoReauth,
+	listFoldersInDriveWithCache,
 } from "../services/driveApi.js";
 import {
 	uploadToYouTubeWithAutoReauth,
@@ -36,24 +37,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	// Initial load of folders from cache
 	(async function initialLoad() {
-		const token = await getAccessToken();
+		// Use interactive=false to prevent popup loops on load
+		const token = await getAccessToken(false);
 		if (token) {
 			try {
-				allFolders = await listFoldersInDriveWithCacheAndAutoReauth(
-					token,
-					false
-				);
+				// Use the NON-auto-reauth version to prevent wrapper popups
+				allFolders = await listFoldersInDriveWithCache(token, false);
 				if (allFolders && allFolders.length) {
 					renderFolderList(allFolders, token);
 				}
 			} catch (err) {
-				console.log("No valid cache or load failed", err);
+				console.log("No valid cache or load failed (silent)", err);
 			}
+		} else {
+			console.log("No valid token on init - waiting for user refresh.");
 		}
 	})();
 
 	// == refresh folders button == //
 	refreshFoldersBtn.addEventListener("click", async () => {
+		// Default interactive=true
 		const token = await getAccessToken();
 		if (!token) {
 			console.error("Failed to retrieve token!");
@@ -299,48 +302,68 @@ function renderVideoList(videos, accessToken, folderName) {
 
 		// We will create the video element ONLY on hover to save resources
 		let videoEl = null;
+		let destroyTimer = null;
+		let lastScrub = 0;
 
 		previewWrapper.addEventListener("mouseenter", () => {
+			// if you previously scheduled a destroy, cancel it
+			if (destroyTimer) {
+				clearTimeout(destroyTimer);
+				destroyTimer = null;
+			}
+
 			if (!videoEl) {
 				previewWrapper.classList.add("loading");
+
 				videoEl = document.createElement("video");
 				videoEl.className = "video-preview-player";
 				videoEl.muted = true;
 				videoEl.playsInline = true;
-				// Trick to authenticate media request: append access token
-				// NOTE: verify 'token' is available in scope (passed to renderVideoList)
-				videoEl.src = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&access_token=${accessToken}`;
+
+				// preload and keep buffer
+				videoEl.preload = "auto";
 
 				videoEl.oncanplay = () => {
 					previewWrapper.classList.remove("loading");
 					videoEl.style.display = "block";
 				};
 
+				videoEl.onerror = () => {
+					console.error("Video load error:", videoEl.error);
+					previewWrapper.classList.remove("loading");
+				};
+
 				previewWrapper.appendChild(videoEl);
+
+				// keep your current src approach for now
+				videoEl.src = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&access_token=${accessToken}`;
+				videoEl.load(); // ensure fetch starts
 			} else {
 				videoEl.style.display = "block";
-				// if it was paused/hidden, make sure it's ready
 			}
 		});
 
 		previewWrapper.addEventListener("mousemove", (e) => {
-			if (videoEl && videoEl.duration) {
-				const rect = previewWrapper.getBoundingClientRect();
-				const x = e.clientX - rect.left;
-				const width = rect.width;
-				const percent = Math.max(0, Math.min(1, x / width));
-				// Set time based on mouse position (scrubbing)
-				videoEl.currentTime = videoEl.duration * percent;
-			}
-		});
+			if (!videoEl || !isFinite(videoEl.duration) || videoEl.duration <= 0)
+				return;
 
+			const now = performance.now();
+			if (now - lastScrub < 50) return; // 20 Hz
+			lastScrub = now;
+
+			const rect = previewWrapper.getBoundingClientRect();
+			const percent = Math.max(
+				0,
+				Math.min(1, (e.clientX - rect.left) / rect.width)
+			);
+			videoEl.currentTime = videoEl.duration * percent;
+		});
 		previewWrapper.addEventListener("mouseleave", () => {
-			if (videoEl) {
-				videoEl.style.display = "none";
-				videoEl.pause();
-				// Optional: remove it entirely to free memory if list is huge
-				// videoEl.remove(); videoEl = null;
-			}
+			if (!videoEl) return;
+
+			// Freeze on the current frame:
+			videoEl.pause();
+			videoEl.style.display = "none";
 		});
 
 		li.appendChild(previewWrapper);

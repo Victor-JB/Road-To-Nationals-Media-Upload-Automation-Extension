@@ -10,9 +10,9 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://*.roadtonationals.com/*",
-    "https://www.googleapis.com/auth/drive.readonly",
-    "https://www.googleapis.com/auth/youtube.force-ssl"
+  "https://*.roadtonationals.com/*",
+  "https://www.googleapis.com/*",
+  "https://*.googleusercontent.com/*"
   ],
   "background": {
     "service_worker": "background.js"
