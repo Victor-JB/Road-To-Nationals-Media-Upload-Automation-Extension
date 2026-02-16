@@ -7,13 +7,13 @@
     "identity",
     "storage",
     "activeTab",
-    "scripting",
-    "declarativeNetRequest"
+    "scripting"
   ],
   "host_permissions": [
     "https://www.googleapis.com/*",
     "https://*.googleusercontent.com/*",
-    "https://*.roadtonationals.com/*"
+    "https://*.roadtonationals.com/*",
+    "https://apis.google.com/*"
   ],
   "background": {
     "service_worker": "background.js"

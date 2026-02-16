@@ -1,6 +1,10 @@
 // youtubeApi.js
 
-import { chromeStorageGet, chromeStorageSet } from "../background/oauth.js";
+import {
+	chromeStorageGet,
+	chromeStorageSet,
+	getAccessToken,
+} from "../background/oauth.js";
 import {
 	showUploadStatus,
 	withAutoReauth,
@@ -80,8 +84,17 @@ export async function getStoredVideoIDs() {
 /**
  * Resumable upload: fetch the video bytes from Drive, then upload them to YouTube.
  * If token is invalid, we throw an Error with .status = 401.
+ *
+ * @param {string} driveFileId - The Google Drive file ID
+ * @param {string} title - Video title
+ * @param {string} desc - Video description (score)
  */
-export async function uploadToYouTube(driveFileId, title, desc, accessToken) {
+export async function uploadToYouTube(driveFileId, title, desc) {
+	const accessToken = await getAccessToken();
+	if (!accessToken) {
+		throw new Error("Failed to get access token");
+	}
+
 	// Step 1: Initiate the upload session
 	const fixed_desc = buildDescription(desc);
 
@@ -150,17 +163,15 @@ export async function uploadToYouTube(driveFileId, title, desc, accessToken) {
 	return youtubeData;
 }
 
-export const uploadToYouTubeWithAutoReauth = withAutoReauth(
-	uploadToYouTube,
-	/* tokenIndex= */ 3
-);
+export const uploadToYouTubeWithAutoReauth = withAutoReauth(uploadToYouTube);
 
 //--------------------------------------------------------------------------- //
 /**
  * Creates a new YouTube playlist with the given name.
  * Requires a token with playlist write permission (often "youtube" or "youtube.force-ssl" scope).
  */
-async function createPlaylist(accessToken, playlistName, playlistDescription) {
+async function createPlaylist(playlistName, playlistDescription) {
+	const accessToken = await getAccessToken();
 	const desc_str =
 		"\n\n\nPlaylist automatically generated via GymACT Road2Nationals Uploader";
 	const playlistMeta = {
@@ -205,7 +216,8 @@ async function createPlaylist(accessToken, playlistName, playlistDescription) {
 /**
  * Adds the given YouTube videoId to the specified playlistId.
  */
-async function addVideoToPlaylist(accessToken, playlistId, videoId) {
+async function addVideoToPlaylist(playlistId, videoId) {
+	const accessToken = await getAccessToken();
 	const body = {
 		snippet: {
 			playlistId: playlistId,
@@ -249,8 +261,7 @@ async function addVideoToPlaylist(accessToken, playlistId, videoId) {
 export async function massUploadAllVideosToPlaylist(
 	videosInfoMap,
 	playlistName,
-	playlistDescription,
-	accessToken
+	playlistDescription
 ) {
 	const uploadedVideos = [];
 	let stepMessage = "";
@@ -268,11 +279,7 @@ export async function massUploadAllVideosToPlaylist(
 	);
 
 	// 1) Create a new playlist
-	const playlist = await createPlaylist(
-		accessToken,
-		playlistName,
-		playlistDescription
-	);
+	const playlist = await createPlaylist(playlistName, playlistDescription);
 	const playlistId = playlist.id;
 
 	showUploadStatus(
@@ -304,8 +311,7 @@ export async function massUploadAllVideosToPlaylist(
 		const uploadedVideo = await uploadToYouTubeWithAutoReauth(
 			file.id,
 			title,
-			score_desc,
-			accessToken
+			score_desc
 		);
 
 		stepMessage = `Step 2.${i + 2}: Adding video ${
@@ -319,7 +325,7 @@ export async function massUploadAllVideosToPlaylist(
 			[],
 			stepMessage
 		);
-		await addVideoToPlaylist(accessToken, playlistId, uploadedVideo.id);
+		await addVideoToPlaylist(playlistId, uploadedVideo.id);
 
 		// Save the uploaded video's title and ID
 		uploadedVideos.push({ title: title, id: uploadedVideo.id });

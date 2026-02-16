@@ -39,57 +39,25 @@ export function chromeStorageRemove(keys) {
 
 // -------------------------------------------------------------------------- //
 /**
- * Checks if a stored token is valid.
- * This is a basic check. For robustness, you can try calling an API endpoint (like tokeninfo).
- * But relying on the API calls returning 401 is usually more efficient than pre-checking.
- * However, since you asked for checking expiry, we can add a check if we store expiry time.
- * If we don't store expiry time (Implicit Flow often doesn't give it easily in the fragment without parsing 'expires_in'),
- * we can rely on the re-auth flow.
- *
- * NOTE: The existing 'getAccessToken' implements the Implicit Grant flow manually via `launchWebAuthFlow`.
- * The response usually looks like: ...#access_token=ya29...&token_type=Bearer&expires_in=3599
- * We should parse `expires_in` to know when it expires locally.
+ * Invalidates the current access token by removing it from storage.
+ * Call this when you receive a 401 error to force re-authentication.
  */
-
-/**
- * Sets a session-scoped declarativeNetRequest rule to automatically inject
- * the Authorization header for Drive media requests.
- * This allows <video src="..."> to work without exposing the token in the URL.
- */
-async function setDriveAuthHeaderRule(accessToken) {
-	const RULE_ID = 1001;
-
-	await chrome.declarativeNetRequest.updateSessionRules({
-		removeRuleIds: [RULE_ID],
-		addRules: [
-			{
-				id: RULE_ID,
-				priority: 1,
-				action: {
-					type: "modifyHeaders",
-					requestHeaders: [
-						{
-							header: "Authorization",
-							operation: "set",
-							value: `Bearer ${accessToken}`,
-						},
-					],
-				},
-				condition: {
-					// Verify this pattern matches your drive file URLs
-					// "||" = domain anchor. "*" = wildcard.
-					urlFilter: "||www.googleapis.com/drive/v3/files/*",
-					// We include 'media', 'xmlhttprequest', and 'other' to cover <video> and fetch
-					resourceTypes: ["media", "xmlhttprequest", "other"],
-				},
-			},
-		],
-	});
-	console.log("Updated session rule for Drive auth header.");
+export async function invalidateToken() {
+	await chromeStorageRemove(["accessToken", "tokenExpiry"]);
+	console.log("Token invalidated");
 }
 
+// -------------------------------------------------------------------------- //
 /**
  * Returns a (cached) OAuth 2.0 access token or launches interactive flow.
+ *
+ * IMPORTANT LIMITATION: With drive.file scope, we can only access:
+ * - Files the user explicitly selects through the Google Picker API
+ * - Files created by our application
+ *
+ * We CANNOT recursively list folder contents or access arbitrary files.
+ * The user must select each file individually via the Picker.
+ *
  * @param {boolean} interactive - Whether to prompt the user (default: true)
  */
 export async function getAccessToken(interactive = true) {
@@ -100,8 +68,6 @@ export async function getAccessToken(interactive = true) {
 
 	// Check if token exists and is not expired (buffer of 60s)
 	if (accessToken && tokenExpiry && Date.now() < tokenExpiry - 60000) {
-		// Refresh the rule just in case (e.g. browser restart preserved storage but cleared rules)
-		await setDriveAuthHeaderRule(accessToken);
 		return accessToken;
 	}
 
@@ -161,9 +127,6 @@ export async function getAccessToken(interactive = true) {
 		accessToken: token,
 		tokenExpiry: expiryTimestamp,
 	});
-
-	// Install the session rule with the fresh token
-	await setDriveAuthHeaderRule(token);
 
 	return token;
 }

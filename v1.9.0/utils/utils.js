@@ -1,35 +1,29 @@
 // utils.js -- just auxiliary functions
 
-import { getAccessToken, chromeStorageRemove } from "../background/oauth.js";
+import { getAccessToken, invalidateToken } from "../background/oauth.js";
 import { autofillOnSite } from "../services/autofill.js";
 import { clearPickerCache } from "../services/caching.js";
 
 /**
- * Wrap any async function whose first arg is `accessToken`,
- * retrying once if it throws an error with `.status === 401`.
+ * Wrap any async function, retrying once if it throws an error with `.status === 401`.
+ * The wrapped function should call getAccessToken() internally to get its token.
  *
- * @param {Function} fn – async (accessToken, ...args) ⇒ Promise<…>
- * @returns {Function} same signature as fn, but with auto-reauth
+ * @param {Function} fn – async (...args) ⇒ Promise<…>
+ * @returns {Function} same signature as fn, but with auto-reauth on 401
  */
 export function withAutoReauth(fn) {
-	return async function (accessToken, ...restArgs) {
+	return async function (...args) {
 		try {
-			return await fn(accessToken, ...restArgs);
+			return await fn(...args);
 		} catch (err) {
 			if (err.status === 401) {
 				console.warn(`${fn.name} got 401; re-authenticating…`);
 
-				// CLEAR BOTH token and expiry
-				await chromeStorageRemove(["accessToken", "tokenExpiry"]);
+				// Invalidate token and force re-auth
+				await invalidateToken();
 
-				// Force getAccessToken to run flow again
-				const newToken = await getAccessToken();
-
-				if (!newToken) {
-					throw new Error(`Re-auth failed in wrapper for ${fn.name}`);
-				}
-				// retry original call with fresh token
-				return await fn(newToken, ...restArgs);
+				// Retry the entire function call (it will get a fresh token internally)
+				return await fn(...args);
 			}
 			throw err;
 		}

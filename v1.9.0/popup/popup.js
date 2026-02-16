@@ -1,7 +1,10 @@
 // popup.js
 import { getAccessToken } from "../background/oauth.js";
 import { PICKER_CONFIG } from "./pickerConfig.js";
-import { listVideosInFolderWithAutoReauth } from "../services/driveApi.js";
+import {
+	selectVideosFromDrive,
+	isPickerConfigured,
+} from "../services/pickerHandler.js";
 import {
 	cacheCurrentVideos,
 	getCachedVideos,
@@ -26,6 +29,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const uploadAllBtn = document.getElementById("uploadAllButton");
 	const container = document.getElementById("persistedContainer");
 
+	// Check if picker is configured
+	const pickerStatus = isPickerConfigured();
+	if (!pickerStatus.configured) {
+		console.warn("Picker not configured:", pickerStatus.error);
+	}
+
 	// Restore cached selection on load (non-interactive to avoid auth prompts)
 	(async function hydrateFromCache() {
 		const token = await getAccessToken(false);
@@ -36,25 +45,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 			if (cachedVideosData) {
 				const { videos, folderName } = cachedVideosData;
 				const savedFormState = await getCachedFormState();
-				renderVideoList(videos, token, folderName, savedFormState);
+				renderVideoList(videos, folderName, savedFormState);
 			}
 		} catch (error) {
 			console.warn("Failed to hydrate from cache", error);
 		}
 	})();
 
-	// Listen for picker results from the background script
+	// Listen for picker results from the picker page
 	chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-		if (message.type === "pickerResult") {
-			handlePickerSelection(message.docs);
+		if (message.type === "PICKER_RESULT") {
+			handlePickerResult(message);
 		}
 	});
 
+	// Open picker button click handler
 	openPickerBtn.addEventListener("click", async () => {
-		try {
-			resolvePickerConfig(); // Validate config exists
-		} catch (configError) {
-			alert(configError.message);
+		// Check configuration
+		const configStatus = isPickerConfigured();
+		if (!configStatus.configured) {
+			alert(configStatus.error);
 			return;
 		}
 
@@ -65,63 +75,58 @@ document.addEventListener("DOMContentLoaded", async () => {
 		}
 
 		// Open picker in a new popup window
+		const params = new URLSearchParams({
+			token: token,
+			apiKey: PICKER_CONFIG.developerKey,
+			appId: PICKER_CONFIG.appId,
+		});
+
 		const pickerUrl = chrome.runtime.getURL(
-			`popup/pickerWindow.html?token=${encodeURIComponent(token)}`
+			`popup/pickerPage.html?${params.toString()}`
 		);
 		window.open(
 			pickerUrl,
-			"drivePicker",
+			"googlePicker",
 			"width=900,height=600,menubar=no,toolbar=no,location=no,status=no"
 		);
 	});
 
-	async function handlePickerSelection(docs) {
-		if (!Array.isArray(docs) || docs.length === 0) {
+	/**
+	 * Handle picker result message
+	 * Note: With drive.file scope, we can only access files explicitly selected.
+	 * Folder selection is not supported - users must select individual video files.
+	 */
+	async function handlePickerResult(message) {
+		if (
+			message.action === "cancel" ||
+			!message.docs ||
+			message.docs.length === 0
+		) {
 			return;
 		}
 
-		const token = await getAccessToken();
-		if (!token) {
-			alert("Authentication expired. Please try again.");
-			return;
-		}
-
-		const firstDoc = docs[0];
-		const isFolder = firstDoc.mimeType === "application/vnd.google-apps.folder";
-
-		if (isFolder) {
-			try {
-				const videos = await listVideosInFolderWithAutoReauth(
-					token,
-					firstDoc.id
-				);
-				await cacheCurrentVideos(videos, firstDoc.name);
-				renderVideoList(videos, token, firstDoc.name);
-			} catch (error) {
-				console.error("Error listing folder via picker", error);
-				alert("Unable to enumerate the selected folder.");
-			}
-			return;
-		}
-
-		const validVideos = docs.filter(
+		// Filter to only video files (folders won't work with drive.file scope)
+		const validVideos = message.docs.filter(
 			(doc) => doc.mimeType && doc.mimeType.startsWith("video/")
 		);
+
+		if (!validVideos.length) {
+			alert(
+				"No video files were selected. Please select video files only.\n\nNote: Folder selection is not supported - please select individual video files."
+			);
+			return;
+		}
 
 		const formattedVideos = validVideos.map((doc) => ({
 			id: doc.id,
 			name: doc.name,
 			mimeType: doc.mimeType,
-			thumbnailLink: doc.iconUrl,
+			thumbnailLink: doc.iconUrl || null,
+			parent: doc.parentId || null,
 		}));
 
-		if (!formattedVideos.length) {
-			alert("No supported video files were selected.");
-			return;
-		}
-
-		await cacheCurrentVideos(formattedVideos, "Selected Files");
-		renderVideoList(formattedVideos, token, "Selected Files");
+		await cacheCurrentVideos(formattedVideos, "Selected Videos");
+		renderVideoList(formattedVideos, "Selected Files");
 	}
 
 	const videoData = await getStoredVideoIDs();
@@ -201,18 +206,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 				}
 			});
 
-			const token = await getAccessToken();
-			if (!token) {
-				alert("Failed to retrieve token for mass upload.");
-				return;
-			}
-
 			// Call the mass upload function with a step update callback
 			await massUploadAllVideosToPlaylist(
 				videoInfoMap,
 				playlistName,
-				playlistDescription,
-				token
+				playlistDescription
 			);
 		} catch (err) {
 			console.error("Error in mass upload:", err);
@@ -229,11 +227,10 @@ document.addEventListener("DOMContentLoaded", async () => {
  * Renders a list of videos with "Upload to YouTube" buttons
  * and also updates currentVideos so we can mass-upload them.
  * @param {Array} videos - List of video files
- * @param {string} accessToken - Current auth token
  * @param {string} folderName - Name of folder
  * @param {Object} [savedState=null] - Optional map of fileId -> {name, score}
  */
-function renderVideoList(videos, accessToken, folderName, savedState = null) {
+function renderVideoList(videos, folderName, savedState = null) {
 	const videoListElem = document.getElementById("videoList");
 	videoListElem.innerHTML = "";
 
@@ -436,8 +433,7 @@ function renderVideoList(videos, accessToken, folderName, savedState = null) {
 				const uploadedVideo = await uploadToYouTubeWithAutoReauth(
 					file.id,
 					title,
-					score,
-					accessToken
+					score
 				);
 
 				showUploadStatus(
