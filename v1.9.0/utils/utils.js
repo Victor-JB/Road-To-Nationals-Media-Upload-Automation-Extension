@@ -1,7 +1,11 @@
-// utils.js -- just auxiliary functions
+// utils.js -- Utility functions for the extension
+// NOTE: Utils should not depend on services to maintain proper separation of concerns
 
-import { getAccessToken, invalidateToken } from "../background/oauth.js";
-import { autofillOnSite } from "../services/autofill.js";
+import {
+	getAccessToken,
+	invalidateToken,
+	chromeStorageRemove,
+} from "../background/oauth.js";
 import { clearPickerCache } from "../services/caching.js";
 
 /**
@@ -139,11 +143,8 @@ export function showUploadStatus(
 			});
 		};
 
-		// show & wire up our new Autofill button
+		// Show autofill button - onclick handler should be set by caller (popup.js)
 		autofillButton.style.display = "inline-block";
-		autofillButton.onclick = () => {
-			autofillOnSite();
-		};
 	} else {
 		collapsibleBox.style.display = "none";
 		copyButton.style.display = "none";

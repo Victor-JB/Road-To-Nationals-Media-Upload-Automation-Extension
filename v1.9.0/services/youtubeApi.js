@@ -13,45 +13,6 @@ import {
 } from "../utils/utils.js";
 
 const MUPLOAD_STEPS = 3;
-const SESSION_KEY = "massUploadSession";
-
-/**
- * {
- *   folderId:    '1aBcD',          // Google-Drive folder
- *   playlistId:  'PLxyz',          // created at runtime (or '')
- *   playlistName:'2025 Nationals', // for title concatenation
- *   index:       0,                // NEXT video to upload
- *   jobs: [                      // same order as the folder listing
- *     {
- *       driveId:     'file123',
- *       customTitle: 'Joseph Conley FX',
- *       score:       '13.05',      // if you keep that field
- *       status:      'pending' | 'done' | 'error',
- *       youtubeId:   'abcdEFGhijk' // set when done
- *     }, …
- *   ]
- * }
- */
-
-function loadSession() {
-	return new Promise((resolve) =>
-		chrome.storage.local.get(SESSION_KEY, (data) =>
-			resolve(data[SESSION_KEY] || null)
-		)
-	);
-}
-
-function saveSession(session) {
-	return new Promise((resolve) =>
-		chrome.storage.local.set({ [SESSION_KEY]: session }, resolve)
-	);
-}
-
-function clearSession() {
-	return new Promise((resolve) =>
-		chrome.storage.local.remove(SESSION_KEY, resolve)
-	);
-}
 
 /**
  * Saves uploaded video IDs to chrome.storage.local.
@@ -82,8 +43,136 @@ export async function getStoredVideoIDs() {
 
 //--------------------------------------------------------------------------- //
 /**
+ * Fetches a file from Google Drive with retry logic for temporary failures.
+ * Works with Picker-selected files (drive.file scope grants access).
+ *
+ * @param {string} driveFileId - The Google Drive file ID
+ * @param {string} accessToken - OAuth access token
+ * @param {number} maxRetries - Maximum retry attempts (default: 3)
+ * @returns {Promise<Blob>} - The file as a Blob
+ */
+async function fetchDriveFileWithRetry(
+	driveFileId,
+	accessToken,
+	maxRetries = 3
+) {
+	let lastError = null;
+
+	for (let attempt = 1; attempt <= maxRetries; attempt++) {
+		try {
+			const response = await fetch(
+				`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
+				{ headers: { Authorization: `Bearer ${accessToken}` } }
+			);
+
+			if (response.ok) {
+				return await response.blob();
+			}
+
+			// Handle specific error codes
+			if (response.status === 403) {
+				throw new Error(
+					`Access denied to file (403). The file may not have been selected via Picker, ` +
+						`or the drive.file scope doesn't grant access to this file.`
+				);
+			}
+
+			if (response.status === 404) {
+				throw new Error(
+					`File not found (404). The file may have been deleted or moved.`
+				);
+			}
+
+			if (response.status === 401) {
+				const err = new Error("Authentication failed - token may be expired");
+				err.status = 401;
+				throw err;
+			}
+
+			// For 5xx errors or rate limits (429), retry
+			if (response.status >= 500 || response.status === 429) {
+				lastError = new Error(`Drive API error: ${response.status}`);
+				lastError.status = response.status;
+
+				if (attempt < maxRetries) {
+					const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+					console.warn(
+						`Attempt ${attempt} failed with ${response.status}, retrying in ${delay}ms...`
+					);
+					await new Promise((resolve) => setTimeout(resolve, delay));
+					continue;
+				}
+			}
+
+			// Other errors - don't retry
+			const err = new Error(
+				`Failed to fetch file from Drive: ${response.status}`
+			);
+			err.status = response.status;
+			throw err;
+		} catch (error) {
+			if (
+				error.status === 401 ||
+				error.status === 403 ||
+				error.status === 404
+			) {
+				throw error; // Don't retry auth/access/not-found errors
+			}
+			lastError = error;
+			if (attempt === maxRetries) {
+				throw lastError;
+			}
+		}
+	}
+
+	throw lastError || new Error("Failed to fetch file after retries");
+}
+
+/**
+ * Validates that we can access a Drive file before attempting upload.
+ * This catches permission issues early with a lightweight metadata request.
+ *
+ * @param {string} driveFileId - The Google Drive file ID
+ * @param {string} accessToken - OAuth access token
+ * @returns {Promise<{id: string, name: string, mimeType: string}>} - File metadata
+ */
+async function validateDriveFileAccess(driveFileId, accessToken) {
+	const response = await fetch(
+		`https://www.googleapis.com/drive/v3/files/${driveFileId}?fields=id,name,mimeType`,
+		{ headers: { Authorization: `Bearer ${accessToken}` } }
+	);
+
+	if (!response.ok) {
+		if (response.status === 403) {
+			throw new Error(
+				`Cannot access file (403 Forbidden). With drive.file scope, you can only access ` +
+					`files selected through the Picker or created by this app.`
+			);
+		}
+		if (response.status === 404) {
+			throw new Error(
+				`File not found (404). It may have been deleted or moved.`
+			);
+		}
+		if (response.status === 401) {
+			const err = new Error("Authentication failed");
+			err.status = 401;
+			throw err;
+		}
+		throw new Error(`Cannot access file: ${response.status}`);
+	}
+
+	return await response.json();
+}
+
+//--------------------------------------------------------------------------- //
+/**
  * Resumable upload: fetch the video bytes from Drive, then upload them to YouTube.
  * If token is invalid, we throw an Error with .status = 401.
+ *
+ * With drive.file scope, this only works for files that were:
+ * - Selected through the Google Picker API, OR
+ * - Created by this application
  *
  * @param {string} driveFileId - The Google Drive file ID
  * @param {string} title - Video title
@@ -94,6 +183,11 @@ export async function uploadToYouTube(driveFileId, title, desc) {
 	if (!accessToken) {
 		throw new Error("Failed to get access token");
 	}
+
+	// Step 0: Validate file access before starting upload
+	console.log(`Validating access to Drive file: ${driveFileId}`);
+	const fileInfo = await validateDriveFileAccess(driveFileId, accessToken);
+	console.log(`File access confirmed: ${fileInfo.name} (${fileInfo.mimeType})`);
 
 	// Step 1: Initiate the upload session
 	const fixed_desc = buildDescription(desc);
@@ -129,19 +223,10 @@ export async function uploadToYouTube(driveFileId, title, desc) {
 
 	const uploadUrl = response.headers.get("Location");
 
-	// Step 2: Download the video blob from Drive
-	response = await fetch(
-		`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
-		{ headers: { Authorization: `Bearer ${accessToken}` } }
-	);
-
-	if (!response.ok) {
-		const err = new Error("Failed to fetch file from Drive");
-		err.status = response.status;
-		throw err;
-	}
-
-	const fileBlob = await response.blob();
+	// Step 2: Download the video blob from Drive (with retry logic)
+	console.log(`Downloading video from Drive: ${driveFileId}`);
+	const fileBlob = await fetchDriveFileWithRetry(driveFileId, accessToken);
+	console.log(`Downloaded ${fileBlob.size} bytes`);
 
 	// Step 3: PUT the blob to the YouTube resumable session
 	response = await fetch(uploadUrl, {

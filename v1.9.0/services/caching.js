@@ -1,4 +1,8 @@
-// caching.js - Handles caching of picker selections in local storage
+// caching.js - Handles caching of Picker-selected videos in local storage
+//
+// NOTE: With drive.file scope, users select individual video files via the
+// Google Picker. We cache these selections so they persist across popup opens.
+// Folder traversal is not supported with this OAuth scope.
 
 import {
 	chromeStorageGet,
@@ -8,18 +12,18 @@ import {
 
 const VIDEO_CACHE_KEY = "currentVideosCache";
 const FORM_CACHE_KEY = "videoFormStateCache";
-const CACHE_EXPIRY_KEY = "driveFoldersCacheExpiry"; // legacy key retained for compatibility
+const CACHE_EXPIRY_KEY = "selectionCacheExpiry";
 const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
 // -------------------------------------------------------------------------- //
 /**
- * Caches the current list of videos and folder name
- * @param {Array} videos - Array of video objects
- * @param {string} folderName - Name of the folder these videos belong to
+ * Caches the current list of Picker-selected videos
+ * @param {Array} videos - Array of video objects from Picker selection
+ * @param {string} selectionName - Label for this selection batch (e.g., "Selected Videos")
  */
-export async function cacheCurrentVideos(videos, folderName) {
+export async function cacheCurrentVideos(videos, selectionName) {
 	try {
-		// Maintain a single expiry so folders, videos, and form states align.
+		// Maintain a single expiry so videos and form states align.
 
 		let { [CACHE_EXPIRY_KEY]: expiryTime } = await chromeStorageGet([
 			CACHE_EXPIRY_KEY,
@@ -34,11 +38,11 @@ export async function cacheCurrentVideos(videos, folderName) {
 		await chromeStorageSet({
 			[VIDEO_CACHE_KEY]: {
 				videos,
-				folderName,
+				selectionName,
 			},
 		});
 
-		console.log(`Cached ${videos.length} videos for folder "${folderName}"`);
+		console.log(`Cached ${videos.length} videos (${selectionName})`);
 	} catch (error) {
 		console.error("Failed to cache videos:", error);
 	}
@@ -46,7 +50,7 @@ export async function cacheCurrentVideos(videos, folderName) {
 
 /**
  * Retrieves cached videos if valid
- * @returns {Object|null} - { videos, folderName } or null
+ * @returns {Object|null} - { videos, selectionName } or null if expired/missing
  */
 export async function getCachedVideos() {
 	try {
@@ -57,8 +61,11 @@ export async function getCachedVideos() {
 			return null;
 		}
 
-		console.log(`Using cached videos for folder "${cachedData.folderName}"`);
-		return cachedData;
+		// Support both old (folderName) and new (selectionName) cache formats
+		const selectionName =
+			cachedData.selectionName || cachedData.folderName || "Selected Videos";
+		console.log(`Using cached videos (${selectionName})`);
+		return { videos: cachedData.videos, selectionName };
 	} catch (error) {
 		console.error("Failed to retrieve cached videos:", error);
 		return null;

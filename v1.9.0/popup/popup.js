@@ -1,10 +1,7 @@
 // popup.js
 import { getAccessToken } from "../background/oauth.js";
 import { PICKER_CONFIG } from "./pickerConfig.js";
-import {
-	selectVideosFromDrive,
-	isPickerConfigured,
-} from "../services/pickerHandler.js";
+import { isPickerConfigured } from "../services/pickerHandler.js";
 import {
 	cacheCurrentVideos,
 	getCachedVideos,
@@ -28,6 +25,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const openPickerBtn = document.getElementById("openPickerBtn");
 	const uploadAllBtn = document.getElementById("uploadAllButton");
 	const container = document.getElementById("persistedContainer");
+	const autofillBtn = document.getElementById("autofillButton");
+
+	// Set up autofill button handler (shown after successful uploads)
+	if (autofillBtn) {
+		autofillBtn.addEventListener("click", () => autofillOnSite());
+	}
 
 	// Check if picker is configured
 	const pickerStatus = isPickerConfigured();
@@ -43,9 +46,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 		try {
 			const cachedVideosData = await getCachedVideos();
 			if (cachedVideosData) {
-				const { videos, folderName } = cachedVideosData;
+				const { videos, selectionName } = cachedVideosData;
 				const savedFormState = await getCachedFormState();
-				renderVideoList(videos, folderName, savedFormState);
+				renderVideoList(videos, selectionName, savedFormState);
 			}
 		} catch (error) {
 			console.warn("Failed to hydrate from cache", error);
@@ -183,10 +186,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 				return;
 			}
 			if (!currentVideos.length) {
-				alert("No videos to upload in this folder!");
+				alert("No videos selected! Please select videos from Drive first.");
 				return;
 			}
-
 			videoItems.forEach((videoItem, index) => {
 				const scoreInput = videoItem.querySelector(".scoreInput");
 				const nameEventInput = videoItem.querySelector(".nameEventInput");
@@ -226,11 +228,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 /**
  * Renders a list of videos with "Upload to YouTube" buttons
  * and also updates currentVideos so we can mass-upload them.
- * @param {Array} videos - List of video files
- * @param {string} folderName - Name of folder
+ * @param {Array} videos - List of video files from Picker selection
+ * @param {string} selectionName - Label for this batch (e.g., "Selected Videos")
  * @param {Object} [savedState=null] - Optional map of fileId -> {name, score}
  */
-function renderVideoList(videos, folderName, savedState = null) {
+function renderVideoList(videos, selectionName, savedState = null) {
 	const videoListElem = document.getElementById("videoList");
 	videoListElem.innerHTML = "";
 
@@ -238,7 +240,7 @@ function renderVideoList(videos, folderName, savedState = null) {
 	currentVideos = videos;
 
 	if (!videos.length) {
-		videoListElem.textContent = `No video files found in ${folderName}.`;
+		videoListElem.textContent = "No video files in current selection.";
 		return;
 	}
 
@@ -467,19 +469,4 @@ function renderVideoList(videos, folderName, savedState = null) {
 		li.appendChild(uploadBtn);
 		videoListElem.appendChild(li);
 	});
-}
-
-function resolvePickerConfig() {
-	const { developerKey, appId } = PICKER_CONFIG ?? {};
-	if (!developerKey || developerKey.startsWith("__REPLACE")) {
-		throw new Error(
-			"Google Picker API key is missing. Update popup/pickerConfig.js before continuing."
-		);
-	}
-	if (!appId || appId.startsWith("__REPLACE")) {
-		throw new Error(
-			"Google Cloud project number (appId) is missing. Update popup/pickerConfig.js."
-		);
-	}
-	return { developerKey, appId };
 }
