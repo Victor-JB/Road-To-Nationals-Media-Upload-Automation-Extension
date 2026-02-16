@@ -8,10 +8,47 @@
 
 This Chrome Extension:
 1. Authenticates the user via Google OAuth
-2. Lets the user browse folders in their Google Drive
-3. Filters video files inside folders
+2. Opens the **Google Picker** so users can select specific video files from their Drive
+3. Downloads only the user-selected videos (no folder browsing or broad access)
 4. Uploads selected videos to YouTube via the YouTube Data API
 5. Optionally creates a playlist and adds all uploaded videos to it
+
+---
+
+## 🔐 OAuth & Permissions Philosophy
+
+### Why We Use `drive.file` Scope (Not `drive.readonly`)
+
+This extension uses the **restricted `drive.file` scope** instead of the broader `drive.readonly` scope. Here's why:
+
+| Aspect | `drive.readonly` | `drive.file` (Our Choice) |
+|--------|------------------|---------------------------|
+| **Access Level** | Read ALL files in Drive | Only files user explicitly selects |
+| **User Control** | Extension can browse everything | User chooses exactly what to share |
+| **Privacy** | Requires trusting the app with full access | Minimal access - only selected files |
+| **Google Verification** | Requires extensive review | More straightforward verification |
+
+**Key Benefits:**
+- **Privacy-First**: We never see your folder structure or file list
+- **User Control**: You explicitly select each video via Google Picker
+- **Minimal Permissions**: The extension only accesses files you choose to share
+- **Transparency**: No background access to your Drive
+
+### How the Google Picker Works
+
+The Google Picker is Google's official file selection UI that gives users full control:
+
+1. User clicks "Select Videos from Drive" in the extension
+2. Google's Picker UI opens (hosted by Google, not our code)
+3. User navigates their own Drive and selects videos
+4. Picker returns **only** the selected file IDs to the extension
+5. Extension can now access **only** those specific files
+
+This means:
+- ✅ We never see files you don't select
+- ✅ Google handles the file browsing securely
+- ✅ You grant access per-file, not blanket access
+- ✅ Access is revocable at any time via Google Account settings
 
 ---
 
@@ -37,26 +74,56 @@ This is `true` for unpacked extensions, and `false` for Web Store installs.
 
 ---
 
-## 🔍 Required Chrome Permissions
+## 🔍 Required Chrome & OAuth Permissions
 
+### Chrome Extension Permissions
 - `identity`: Used for OAuth login to access Drive and YouTube
-- `storage`: Temporarily caches access tokens for session reuse
+- `storage`: Caches access tokens and video selections temporarily
 - `host_permissions`:
-  - `https://www.googleapis.com/auth/drive.readonly`
-  - `https://www.googleapis.com/auth/youtube.upload`
+  - `https://www.googleapis.com/*` - For Drive file downloads and YouTube uploads
+  - `https://apis.google.com/*` - For Google Picker API
 
-> ✅ We do **not** use `tabs`, `cookies`, or any remote scripts.
+### OAuth Scopes Requested
+- `https://www.googleapis.com/auth/drive.file` - Access **only** to Picker-selected files
+- `https://www.googleapis.com/auth/youtube.force-ssl` - Upload videos to user's YouTube
+
+> ✅ We do **not** use `tabs`, `cookies`, broad Drive access, or any remote scripts.
 
 ---
 
-## ✅ Privacy Summary
+## 🔒 Privacy Policy
 
-- No personal information is collected or stored
-- OAuth tokens are kept in browser memory only for the active session
-- Videos are uploaded only with user consent, and only from their Drive to their own YouTube account
-- No analytics, tracking, or data sharing occurs
+**For the full privacy policy, see [PRIVACY.md](./PRIVACY.md).**
 
-For full details, see the included [`privacy-policy.html`](./privacy-policy.html).
+### Summary
+
+- **Data Accessed**: Only videos you explicitly select via Google Picker
+- **Data Usage**: Selected videos are uploaded to YOUR YouTube account
+- **Data Storage**: Video IDs cached locally for 30 minutes (for retry/resume)
+- **Data Sharing**: Videos go only to YouTube (your account) - no third parties
+- **No Tracking**: No analytics, telemetry, or personal data collection
+
+---
+
+## 📸 Consent Flow Screenshots
+
+*Screenshots demonstrating the user consent and file selection flow:*
+
+### 1. OAuth Consent Screen
+<!-- TODO: Add screenshot of Google OAuth consent screen showing requested permissions -->
+`[Screenshot Placeholder: OAuth consent screen showing drive.file and youtube scopes]`
+
+### 2. Google Picker File Selection
+<!-- TODO: Add screenshot of Google Picker UI with video files -->
+`[Screenshot Placeholder: Google Picker UI showing user selecting video files]`
+
+### 3. Selected Videos Confirmation
+<!-- TODO: Add screenshot of extension popup showing selected videos -->
+`[Screenshot Placeholder: Extension popup displaying selected videos ready for upload]`
+
+### 4. Upload Progress
+<!-- TODO: Add screenshot of upload progress indicator -->
+`[Screenshot Placeholder: Upload progress showing videos being uploaded to YouTube]`
 
 ---
 
@@ -65,16 +132,18 @@ For full details, see the included [`privacy-policy.html`](./privacy-policy.html
 1. Clone the repo
 2. Add your own `manifest.json` if developing privately
 3. Replace the OAuth client IDs inside `oauth.js`
-4. Load the extension unpacked via `chrome://extensions`
+4. Configure `pickerConfig.js` with your Google API Key and App ID
+5. Load the extension unpacked via `chrome://extensions`
 
 ---
 
-## 🧩 Chrome Web Store Submission Notes
+## 🧩 Chrome Web Store & OAuth Verification Notes
 
 If you plan to publish this extension, make sure to:
 - Register the production extension's ID in your OAuth Client
-- Provide a public privacy policy (see provided `.html`)
+- Provide a public privacy policy (see [PRIVACY.md](./PRIVACY.md))
 - Fill out Chrome's Privacy tab (no data types collected)
+- Complete Google OAuth verification (see [OAUTH_VERIFICATION.md](./OAUTH_VERIFICATION.md))
 
 ---
 
